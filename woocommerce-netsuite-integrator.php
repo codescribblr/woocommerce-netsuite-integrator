@@ -15,6 +15,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// Define Constants for use in All plugin files
+if ( ! defined( 'DS' ) ) {
+	define( 'DS', DIRECTORY_SEPARATOR );
+}
+if ( ! defined( 'PLUGINS_DIR' ) ) {
+	define( 'PLUGINS_DIR', dirname(dirname( __FILE__ )) );
+}
+if ( ! defined( 'PLUGIN_DIR' ) ) {
+	define( 'PLUGIN_DIR', PLUGINS_DIR . DS . 'woocommerce-netsuite-integrator' );
+}
+if ( ! defined( 'INCLUDES_DIR' ) ) {
+	define( 'INCLUDES_DIR', PLUGIN_DIR . DS . 'includes' );
+}
+if ( ! defined( 'LIB_DIR' ) ) {
+	define( 'LIB_DIR', INCLUDES_DIR . DS . 'libs' );
+}
+if ( ! defined( 'BUNDLED_PLUGINS_DIR' ) ) {
+	define( 'BUNDLED_PLUGINS_DIR', LIB_DIR . DS . 'bundled_plugins' );
+}
+
 if ( ! class_exists( 'SCM_WC_Netsuite_Integrator' ) ) :
 
 /**
@@ -43,10 +63,14 @@ class SCM_WC_Netsuite_Integrator {
 	 * Initialize the plugin.
 	 */
 	private function __construct() {
+		
+		$this->includes();
+
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
+		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 
-		// Checks with WooCommerce is installed.
+		// Checks if WooCommerce is installed.
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {
 			$this->includes();
 			$this->config = array(
@@ -65,10 +89,11 @@ class SCM_WC_Netsuite_Integrator {
 			// add_action( 'plugins_loaded', array( $this, 'customer_search' ), 98 );
 			// add_action( 'plugins_loaded', array( $this, 'get_and_organize_modified_customers' ), 97 );
 			// add_action( 'plugins_loaded', array( $this, 'update_modified_flag' ), 96 );
-			add_action( 'plugins_loaded', array( $this, 'get_modified_customers_and_update_wordpress_customers' ), 95 );
+			// add_action( 'plugins_loaded', array( $this, 'get_modified_customers_and_update_wordpress_customers' ), 95 );
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
 		}
+		
 	}
 
 	/*
@@ -87,6 +112,51 @@ class SCM_WC_Netsuite_Integrator {
 	    } else {
 	        return false;
 	    }
+	}
+
+	public function register_required_plugins() {
+		/*
+		 * Array of plugin arrays. Required keys are name and slug.
+		 * If the source is NOT from the .org repo, then source is also required.
+		 */
+		$plugins = array(
+
+			array(
+				'name'      => 'WooCommerce',
+				'slug'      => 'woocommerce',
+				'required'  => true,
+				'version'	=> '2.4',
+			),
+			array(
+				'name'      	=> 'GitHub Updater',
+				'slug'      	=> 'github-updater',
+				'source'    	=> 'https://github.com/afragen/github-updater/archive/master.zip',
+				'required'  	=> true, // If false, the plugin is only 'recommended' instead of required.
+				'external_url' 	=> 'https://github.com/afragen/github-updater',
+				'version'		=> '5.0',
+			),
+
+		);
+
+		/*
+		 * Array of configuration settings. Amend each line as needed.
+		 */
+		$config = array(
+			'id'           => 'tgmpa-woocommerce-netsuite-integrator',	// Unique ID for hashing notices for multiple instances of TGMPA.
+			'default_path' => '',                      					// Default absolute path to bundled plugins.
+			'menu'         => 'tgmpa-install-plugins', 					// Menu slug.
+			'parent_slug'  => 'plugins.php',            				// Parent menu slug.
+			'capability'   => 'manage_options',   						// Capability needed to view plugin install page, should be a capability associated with the parent menu used.
+			'has_notices'  => true,                    					// Show admin notices or not.
+			'dismissable'  => true,                    					// If false, a user cannot dismiss the nag message.
+			'dismiss_msg'  => '',                      					// If 'dismissable' is false, this message will be output at top of nag.
+			'is_automatic' => false,                   					// Automatically activate plugins after installation or not.
+			'message'      => '',                      					// Message to output right before the plugins table.
+
+		);
+
+		tgmpa( $plugins, $config );
+
 	}
 
 	private function connect_service() {
@@ -131,8 +201,9 @@ class SCM_WC_Netsuite_Integrator {
 	 * Includes.
 	 */
 	private function includes() {
-		include_once 'includes/libs/netsuite-phptoolkit/NSPHPClient.php';
-		include_once 'includes/libs/netsuite-phptoolkit/NetSuiteService.php';
+		require_once LIB_DIR . DS . 'tgmpa' . DS . 'class-tgm-plugin-activation.php';
+		include_once LIB_DIR . DS . 'netsuite-phptoolkit' . DS . 'NSPHPClient.php';
+		include_once LIB_DIR . DS . 'netsuite-phptoolkit' . DS . 'NetSuiteService.php';
 	}
 
 	/**

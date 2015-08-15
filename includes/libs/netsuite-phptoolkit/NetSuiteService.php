@@ -1,5 +1,7 @@
 <?php
-
+if ( ! defined( 'ABSPATH' ) ) {
+	// exit; // Exit if accessed directly.
+}
 /**
  * Copyright © 2015, NetSuite, Inc.
  */
