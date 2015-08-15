@@ -1,0 +1,43 @@
+# Copyright (C) 2015 Showcase Marketing
+# This file is distributed under the GPLv2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce NetSuite Integrator 1.0.0\n"
+"Report-Msgid-Bugs-To: "
+"http://wordpress.org/support/plugin/woocommerce-netsuite-integrator/\n"
+"POT-Creation-Date: 2015-08-10 14:52:28+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2015-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"X-Generator: grunt-wp-i18n 0.4.9\n"
+
+#. Description of the plugin/theme
+msgid "WooCommerce NetSuite Integrator."
+msgstr ""
+
+#: woocommerce-netsuite-integrator.php:164
+msgid "WooCommerce NetSuite Integrator depends on the last version of %s or later to work!"
+msgstr ""
+
+#: woocommerce-netsuite-integrator.php:164
+msgid "WooCommerce 2.4+"
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "WooCommerce NetSuite Integrator"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "http://wordpress.org/plugins/woocommerce-netsuite-integrator/"
+msgstr ""
+
+#. Author of the plugin/theme
+msgid "Showcase Marketing"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "http://createlaunchlead.com"
+msgstr ""
