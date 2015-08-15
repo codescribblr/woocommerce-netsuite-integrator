@@ -5,10 +5,12 @@
  * Description: WooCommerce NetSuite Integrator.
  * Author: Showcase Marketing
  * Author URI: http://createlaunchlead.com
- * Version: 1.0.0
+ * Version: 1.0.1
  * License: GPLv2 or later
  * Text Domain: woocommerce-netsuite-integrator
  * Domain Path: languages/
+ * Bitbucket Plugin URI: https://bitbucket.org/showcase/woocoommerce-netsuite-integrator
+ * Bitbucket Branch: master
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -47,7 +49,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 
 	public $config = array();
 	public $service = null;
