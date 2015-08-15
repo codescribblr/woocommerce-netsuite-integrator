@@ -1,3 +1,6 @@
 *@*
-@eaDir
-@synoResource
+*@eaDir/*
+*@synoResource/*
+*@eaDir/
+*@synoResource/
+
