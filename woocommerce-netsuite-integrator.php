@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.0.2
+Version: 1.0.3
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
