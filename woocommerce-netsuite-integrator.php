@@ -487,6 +487,8 @@ class SCM_WC_Netsuite_Integrator {
 		delete_option('options_wni_password');
 		delete_option('options_wni_account_number');
 		delete_option('options_wni_customer_sync_interval');
+
+		wp_clear_scheduled_hook( 'woocommerce-netsuite-integrator-customer-cron' );
 	}
 
 	public function setup_cron() {
