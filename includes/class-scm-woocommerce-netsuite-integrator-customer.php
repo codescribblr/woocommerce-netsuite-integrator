@@ -9,15 +9,9 @@ if ( ! class_exists( 'SCM_WC_Netsuite_Integrator_Customer' ) ) :
  */
 class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Service {
 
-	private function __construct() {
+	public function __construct() {
 		
 		parent::__construct();
-
-		// add_action( 'plugins_loaded', array( $this, 'get_customer' ), 99 );
-		// add_action( 'plugins_loaded', array( $this, 'customer_search' ), 98 );
-		// add_action( 'plugins_loaded', array( $this, 'get_and_organize_modified_customers' ), 97 );
-		// add_action( 'plugins_loaded', array( $this, 'update_modified_flag' ), 96 );
-		// add_action( 'plugins_loaded', array( $this, 'get_modified_customers_and_update_wordpress_customers' ), 95 );
 		
 	}
 

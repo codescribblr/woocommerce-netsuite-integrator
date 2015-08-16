@@ -5,7 +5,7 @@ Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.0.3
+Version: 1.0.4
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -48,7 +48,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.3';
+	const VERSION = '1.0.4';
 
 	/**
 	 * Instance of this class.
@@ -69,20 +69,8 @@ class SCM_WC_Netsuite_Integrator {
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
-
-		$this->config = array(
-			// Required
-			"endpoint"  => "2015_1", // Current version of the NetSuite API
-			"host"      => get_option('_options_wni_host_endpoint'),
-			"email"     => get_option('_options_wni_email'),
-			"password"  => get_option('_options_wni_password'),
-			"role"      => "3", // Must be an admin to have rights
-			"account"   => get_option('_options_wni_account_number'),
-			// Optional
-			"logging"   => true,
-			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
-		);
-
+		add_action( 'init', array( $this, 'setup_cron' ) );
+		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
 
 		// Checks if WooCommerce is installed.
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {			
@@ -90,7 +78,7 @@ class SCM_WC_Netsuite_Integrator {
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
 		}
-		
+
 	}
 
 	/*
@@ -217,8 +205,8 @@ class SCM_WC_Netsuite_Integrator {
 	 */
 	private function includes() {
 		require_once LIB_DIR . DS . 'tgmpa' . DS . 'class-tgm-plugin-activation.php';
-		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-service';
-		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-customer';
+		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-service.php';
+		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-customer.php';
 	}
 
 	/**
@@ -470,11 +458,11 @@ class SCM_WC_Netsuite_Integrator {
 			}
 		}
 
-		update_option('_options_wni_host_endpoint', 'https://webservices.na1.netsuite.com');
-		update_option('_options_wni_email', 'stanton@wolfpackwholesale.com');
-		update_option('_options_wni_password', 'Password300');
-		update_option('_options_wni_account_number', '3787604');
-		update_option('_options_wni_customer_sync_interval', 1);
+		update_option('options_wni_host_endpoint', 'https://webservices.na1.netsuite.com');
+		update_option('options_wni_email', 'stanton@wolfpackwholesale.com');
+		update_option('options_wni_password', 'Password300');
+		update_option('options_wni_account_number', '3787604');
+		update_option('options_wni_customer_sync_interval', 1);
 	}
 
 	/**
@@ -494,11 +482,32 @@ class SCM_WC_Netsuite_Integrator {
 			self::recursively_rmdir($dir);
 		}
 
-		delete_option('_options_wni_host_endpoint');
-		delete_option('_options_wni_email');
-		delete_option('_options_wni_password');
-		delete_option('_options_wni_account_number');
-		delete_option('_options_wni_customer_sync_interval');
+		delete_option('options_wni_host_endpoint');
+		delete_option('options_wni_email');
+		delete_option('options_wni_password');
+		delete_option('options_wni_account_number');
+		delete_option('options_wni_customer_sync_interval');
+	}
+
+	public function setup_cron() {
+
+		$netsuite_customer_integrator = new SCM_WC_Netsuite_Integrator_Customer();
+		// Schedule Cron Job Event
+		if ( ! wp_next_scheduled( 'woocommerce-netsuite-integrator-customer-cron' ) ) {
+			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_custom_schedule', 'woocommerce-netsuite-integrator-customer-cron' );
+		}
+		add_action( 'woocommerce-netsuite-integrator-customer-cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
+	}
+
+	public function woocommerce_netsuite_custom_schedule($schedules) {
+	    
+	    $schedules['woocommerce_netsuite_custom_schedule'] = array(
+	        'interval' => get_option('options_wni_customer_sync_interval') * 60 * 60, // number of hours * 60 minutes * 60 seconds
+	        'display'  => __( 'WooCommerce NetSuite Integrator Custom Schedule' ),
+	    );
+	 
+	    return $schedules;
+
 	}
 
 	/**

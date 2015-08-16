@@ -20,11 +20,11 @@ class SCM_WC_Netsuite_Integrator_Service {
 		$this->config = array(
 			// Required
 			"endpoint"  => "2015_1", // Current version of the NetSuite API
-			"host"      => get_option('_options_wni_host_endpoint'),
-			"email"     => get_option('_options_wni_email'),
-			"password"  => get_option('_options_wni_password'),
+			"host"      => get_option('options_wni_host_endpoint'),
+			"email"     => get_option('options_wni_email'),
+			"password"  => get_option('options_wni_password'),
 			"role"      => "3", // Must be an admin to have rights
-			"account"   => get_option('_options_wni_account_number'),
+			"account"   => get_option('options_wni_account_number'),
 			// Optional
 			"logging"   => true,
 			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
