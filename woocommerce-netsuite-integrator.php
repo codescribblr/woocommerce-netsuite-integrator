@@ -1,5 +1,5 @@
 <?php
-/**
+/*
 Plugin Name: WooCommerce NetSuite Integrator
 Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
 Description: WooCommerce NetSuite Integrator.
@@ -12,7 +12,6 @@ Domain Path: /languages
 Bitbucket Plugin URI: https://bitbucket.org/showcase/woocoommerce-netsuite-integrator
 Bitbucket Branch: master
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -49,7 +48,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.2';
+	const VERSION = '1.0.3';
 
 	public $config = array();
 	public $service = null;
@@ -67,26 +66,28 @@ class SCM_WC_Netsuite_Integrator {
 	private function __construct() {
 		
 		$this->includes();
+		$upload_dir =  wp_upload_dir();
 
 		// Load plugin text domain
 		add_action( 'init', array( $this, 'load_plugin_textdomain' ) );
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 
+		$this->config = array(
+			// Required
+			"endpoint"  => "2015_1", // Current version of the NetSuite API
+			"host"      => get_option('_options_wni_host_endpoint'),
+			"email"     => get_option('_options_wni_email'),
+			"password"  => get_option('_options_wni_password'),
+			"role"      => "3", // Must be an admin to have rights
+			"account"   => get_option('_options_wni_account_number'),
+			// Optional
+			"logging"   => true,
+			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
+		);
+
+
 		// Checks if WooCommerce is installed.
-		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {
-			$this->includes();
-			$this->config = array(
-				// Required
-				"endpoint"  => "2015_1",
-				"host"      => "https://webservices.na1.netsuite.com",
-				"email"     => "stanton@wolfpackwholesale.com",
-				"password"  => "Password300",
-				"role"      => "3",
-				"account"   => "3787604",
-				// Optional
-				"logging"   => true,
-				"log_path"  => "/private/logs/netsuite"
-			);
+		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {			
 			// add_action( 'plugins_loaded', array( $this, 'get_customer' ), 99 );
 			// add_action( 'plugins_loaded', array( $this, 'customer_search' ), 98 );
 			// add_action( 'plugins_loaded', array( $this, 'get_and_organize_modified_customers' ), 97 );
@@ -136,6 +137,17 @@ class SCM_WC_Netsuite_Integrator {
 				'required'  	=> true, // If false, the plugin is only 'recommended' instead of required.
 				'external_url' 	=> 'https://github.com/afragen/github-updater',
 				'version'		=> '5.0',
+			),
+			array(
+				'name'               => 'Advanced Custom Fields Pro', // The plugin name.
+				'slug'               => 'advanced-custom-fields', // The plugin slug (typically the folder name).
+				'source'             => BUNDLED_PLUGINS_DIR . DS . 'advanced-custom-fields.zip', // The plugin source.
+				'required'           => true, // If false, the plugin is only 'recommended' instead of required.
+				'version'            => '5.2.9', // E.g. 1.0.0. If set, the active plugin must be this version or higher. If the plugin version is higher than the plugin version installed, the user will be notified to update the plugin.
+				'force_activation'   => true, // If true, plugin is activated upon theme activation and cannot be deactivated until theme switch.
+				'force_deactivation' => false, // If true, plugin is deactivated upon theme switch, useful for theme-specific plugins.
+				'external_url'       => 'http://www.advancedcustomfields.com/pro/', // If set, overrides default API URL and points to an external URL.
+				'is_callable'        => array('acf_options_page', 'admin_menu'), // If set, this callable will be be checked for availability to determine if a plugin is active.
 			),
 
 		);
@@ -253,6 +265,16 @@ class SCM_WC_Netsuite_Integrator {
 			),
 			array(
 				'base' 		=> $upload_dir['basedir'] . '/wc-netsuite-logs',
+				'file' 		=> 'index.html',
+				'content' 	=> ''
+			),
+			array(
+				'base' 		=> $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
+				'file' 		=> '.htaccess',
+				'content' 	=> 'deny from all'
+			),
+			array(
+				'base' 		=> $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
 				'file' 		=> 'index.html',
 				'content' 	=> ''
 			),
