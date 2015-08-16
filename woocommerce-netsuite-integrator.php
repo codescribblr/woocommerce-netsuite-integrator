@@ -1,16 +1,16 @@
 <?php
 /**
- * Plugin Name: WooCommerce NetSuite Integrator
- * Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
- * Description: WooCommerce NetSuite Integrator.
- * Author: Showcase Marketing
- * Author URI: http://createlaunchlead.com
- * Version: 1.0.1
- * License: GPLv2 or later
- * Text Domain: woocommerce-netsuite-integrator
- * Domain Path: languages/
- * Bitbucket Plugin URI: https://bitbucket.org/showcase/woocoommerce-netsuite-integrator
- * Bitbucket Branch: master
+Plugin Name: WooCommerce NetSuite Integrator
+Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
+Description: WooCommerce NetSuite Integrator.
+Author: Showcase Marketing
+Author URI: http://createlaunchlead.com
+Version: 1.0.1
+License: GPLv2 or later
+Text Domain: woocommerce-netsuite-integrator
+Domain Path: /languages
+Bitbucket Plugin URI: https://bitbucket.org/showcase/woocoommerce-netsuite-integrator
+Bitbucket Branch: master
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
