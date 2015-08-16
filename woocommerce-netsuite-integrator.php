@@ -63,6 +63,7 @@ class SCM_WC_Netsuite_Integrator {
 	private function __construct() {
 		
 		$this->includes();
+		$this->setup_options();
 		$upload_dir =  wp_upload_dir();
 
 		// Load plugin text domain
@@ -146,14 +147,13 @@ class SCM_WC_Netsuite_Integrator {
 			),
 			array(
 				'name'               => 'Advanced Custom Fields Pro', // The plugin name.
-				'slug'               => 'advanced-custom-fields', // The plugin slug (typically the folder name).
+				'slug'               => 'advanced-custom-fields-pro', // The plugin slug (typically the folder name).
 				'source'             => BUNDLED_PLUGINS_DIR . DS . 'advanced-custom-fields.zip', // The plugin source.
 				'required'           => true, // If false, the plugin is only 'recommended' instead of required.
 				'version'            => '5.2.9', // E.g. 1.0.0. If set, the active plugin must be this version or higher. If the plugin version is higher than the plugin version installed, the user will be notified to update the plugin.
 				'force_activation'   => true, // If true, plugin is activated upon theme activation and cannot be deactivated until theme switch.
 				'force_deactivation' => false, // If true, plugin is deactivated upon theme switch, useful for theme-specific plugins.
 				'external_url'       => 'http://www.advancedcustomfields.com/pro/', // If set, overrides default API URL and points to an external URL.
-				'is_callable'        => array('acf_options_page', 'admin_menu'), // If set, this callable will be be checked for availability to determine if a plugin is active.
 			),
 
 		);
@@ -222,12 +222,213 @@ class SCM_WC_Netsuite_Integrator {
 	}
 
 	/**
-	 * Get the plugin options.
+	 * Setup the plugin options.
 	 *
-	 * @return array
 	 */
-	public static function get_options() {
+	public function setup_options() {
+
+		if( function_exists('acf_add_options_sub_page') ) {
+			acf_add_options_sub_page(array(
+				'page_title' 	=> 'WooCommerce NetSuite Settings',
+				'menu_title'	=> 'NetSuite Settings',
+				'parent_slug'	=> 'woocommerce',
+				'capability'	=> 'manage_options',
+			));
+		}
 		
+		if( function_exists('acf_add_local_field_group') ) {
+
+			acf_add_local_field_group(array (
+				'key' => 'group_55cffae61b180',
+				'title' => 'NetSuite Integrator Configuration Options',
+				'fields' => array (
+					array (
+						'key' => 'field_55cffb04b831d',
+						'label' => 'General Options',
+						'name' => '',
+						'type' => 'tab',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placement' => 'left',
+						'endpoint' => 0,
+					),
+					array (
+						'key' => 'field_55cffb48b8321',
+						'label' => 'NetSuite Endpoint Host',
+						'name' => 'wni_host_endpoint',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => 'https://webservices.na1.netsuite.com',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffb8cb8322',
+						'label' => 'NetSuite Account Email',
+						'name' => 'wni_email',
+						'type' => 'email',
+						'instructions' => '',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+					),
+					array (
+						'key' => 'field_55cffbcdb8323',
+						'label' => 'NetSuite Account Password',
+						'name' => 'wni_password',
+						'type' => 'password',
+						'instructions' => '',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffbeab8324',
+						'label' => 'NetSuite Account Number',
+						'name' => 'wni_account_number',
+						'type' => 'text',
+						'instructions' => 'This is the numeric ID of the NetSuite account. This is not the ID of the user.',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffb13b831e',
+						'label' => 'Customer Options',
+						'name' => '',
+						'type' => 'tab',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placement' => 'left',
+						'endpoint' => 0,
+					),
+					array (
+						'key' => 'field_55cffc1fb8325',
+						'label' => 'Customer Sync Interval',
+						'name' => 'wni_customer_sync_interval',
+						'type' => 'number',
+						'instructions' => 'Number of hours between each customer synchronization request between NetSuite and WooCommerce store. (1-24 hrs)',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => 1,
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'min' => 1,
+						'max' => 24,
+						'step' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffb23b831f',
+						'label' => 'Product Options',
+						'name' => '',
+						'type' => 'tab',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placement' => 'left',
+						'endpoint' => 0,
+					),
+					array (
+						'key' => 'field_55cffb38b8320',
+						'label' => 'Quote Options',
+						'name' => '',
+						'type' => 'tab',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placement' => 'left',
+						'endpoint' => 0,
+					),
+				),
+				'location' => array (
+					array (
+						array (
+							'param' => 'options_page',
+							'operator' => '==',
+							'value' => 'acf-options-netsuite-settings',
+						),
+					),
+				),
+				'menu_order' => 0,
+				'position' => 'normal',
+				'style' => 'default',
+				'label_placement' => 'top',
+				'instruction_placement' => 'label',
+				'hide_on_screen' => '',
+				'active' => 1,
+				'description' => '',
+			));
+
+		}
 	}
 
 	/**
@@ -273,6 +474,7 @@ class SCM_WC_Netsuite_Integrator {
 		update_option('_options_wni_email', 'stanton@wolfpackwholesale.com');
 		update_option('_options_wni_password', 'Password300');
 		update_option('_options_wni_account_number', '3787604');
+		update_option('_options_wni_customer_sync_interval', 1);
 	}
 
 	/**
@@ -296,6 +498,7 @@ class SCM_WC_Netsuite_Integrator {
 		delete_option('_options_wni_email');
 		delete_option('_options_wni_password');
 		delete_option('_options_wni_account_number');
+		delete_option('_options_wni_customer_sync_interval');
 	}
 
 	/**
