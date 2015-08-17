@@ -486,7 +486,7 @@ class SCM_WC_Netsuite_Integrator {
 		);
 
 		foreach ( $directories as $dir ) {
-			self::recursively_rmdir($dir);
+			self::recursively_rmdir($dir['base']);
 		}
 
 		delete_option('options_wni_host_endpoint');
