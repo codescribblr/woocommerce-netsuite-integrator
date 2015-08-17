@@ -125,14 +125,14 @@ class SCM_WC_Netsuite_Integrator {
 				'required'  => true,
 				'version'	=> '2.4',
 			),
-			array(
-				'name'      	=> 'GitHub Updater',
-				'slug'      	=> 'github-updater',
-				'source'    	=> 'https://github.com/afragen/github-updater/archive/master.zip',
-				'required'  	=> true, // If false, the plugin is only 'recommended' instead of required.
-				'external_url' 	=> 'https://github.com/afragen/github-updater',
-				'version'		=> '5.0',
-			),
+			// array(
+			// 	'name'      	=> 'GitHub Updater',
+			// 	'slug'      	=> 'github-updater',
+			// 	'source'    	=> 'https://github.com/afragen/github-updater/archive/master.zip',
+			// 	'required'  	=> true, // If false, the plugin is only 'recommended' instead of required.
+			// 	'external_url' 	=> 'https://github.com/afragen/github-updater',
+			// 	'version'		=> '5.0',
+			// ),
 			array(
 				'name'               => 'Advanced Custom Fields Pro', // The plugin name.
 				'slug'               => 'advanced-custom-fields-pro', // The plugin slug (typically the folder name).
@@ -207,6 +207,9 @@ class SCM_WC_Netsuite_Integrator {
 		require_once LIB_DIR . DS . 'tgmpa' . DS . 'class-tgm-plugin-activation.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-service.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-customer.php';
+		include_once INCLUDES_DIR . DS . 'class-bitbucket-plugin-updater.php';
+		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-automattic-readme.php';
+		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-parsedown.php';
 	}
 
 	/**
@@ -488,17 +491,17 @@ class SCM_WC_Netsuite_Integrator {
 		delete_option('options_wni_account_number');
 		delete_option('options_wni_customer_sync_interval');
 
-		wp_clear_scheduled_hook( 'woocommerce-netsuite-integrator-customer-cron' );
+		wp_clear_scheduled_hook( 'woocommerce_netsuite_integrator_customer_cron' );
 	}
 
 	public function setup_cron() {
 
 		$netsuite_customer_integrator = new SCM_WC_Netsuite_Integrator_Customer();
 		// Schedule Cron Job Event
-		if ( ! wp_next_scheduled( 'woocommerce-netsuite-integrator-customer-cron' ) ) {
-			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_custom_schedule', 'woocommerce-netsuite-integrator-customer-cron' );
+		if ( ! wp_next_scheduled( 'woocommerce_netsuite_integrator_customer_cron' ) ) {
+			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_custom_schedule', 'woocommerce_netsuite_integrator_customer_cron' );
 		}
-		add_action( 'woocommerce-netsuite-integrator-customer-cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
+		add_action( 'woocommerce_netsuite_integrator_customer_cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
 	}
 
 	public function woocommerce_netsuite_custom_schedule($schedules) {
