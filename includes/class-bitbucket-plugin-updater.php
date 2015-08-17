@@ -20,30 +20,31 @@ class BitBucket_Plugin_Updater {
     private $bitbucket_API_result; // holds data from BitBucket
     private $bitbucket_auth; // array that holds our username and password for private repos
  
-    function __construct( $plugin_file, $bitbucket_username, $bitbucket_project_name, $bitbucket_auth, $private = false ) {
+    function __construct( $plugin_file, $bitbucket_project_owner, $bitbucket_project_name, $bitbucket_auth, $private = false ) {
         add_filter( "pre_set_site_transient_update_plugins", array( $this, "set_transient" ) );
         add_filter( "plugins_api", array( $this, "set_plugin_info" ), 10, 3 );
         add_filter( "upgrader_post_install", array( $this, "post_install" ), 10, 3 );
         add_filter( 'http_request_args', array( $this, 'maybe_authenticate_http' ), 10, 2 );
- 
-        
-        $this->username = $bitbucket_username;
-        $this->owner = $this->username;
+         
+        $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
-        $this->slug = $this->repo;
         $this->plugin_file = $plugin_file;
+        $this->slug = plugin_basename($this->plugin_file);
         $this->auth = $bitbucket_auth;
         $this->private = $private;
         $this->sections = array(
         	'changelog' => '',
         	'description' => '',
+        	'installation' => '',
+        	'FAQ' => '',
+        	'support' => '',
         );
 
     }
  
     // Get information regarding our plugin from WordPress
     private function init_plugin_data() {
-        $this->slug = plugin_basename( $this->plugin_file );
+        $this->slug = plugin_basename($this->plugin_file);
 		$this->plugin_data = get_plugin_data( $this->plugin_file );
     }
  
@@ -78,7 +79,8 @@ class BitBucket_Plugin_Updater {
 		    $package = $this->construct_download_link();
 		 
 		    $obj = new stdClass();
-		    $obj->slug = $this->slug;
+		    $obj->slug = $this->repo;
+		    $obj->plugin = $this->slug;
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
 		    $obj->package = $package;
@@ -102,7 +104,7 @@ class BitBucket_Plugin_Updater {
 
 		// Add our plugin information
 		$response->last_updated = $this->bitbucket_API_result->timestamp;
-		$response->slug = $this->slug;
+		$response->slug = $this->repo;
 		$response->plugin_name  = $this->plugin_data["Name"];
 		$response->version = str_ireplace('v', '', $this->newest_tag);
 		$response->author = $this->plugin_data["AuthorName"];
@@ -155,7 +157,7 @@ class BitBucket_Plugin_Updater {
 
 	public function construct_download_link() {
 
-		$download_link_base = implode( '/', array( 'https://bitbucket.org', $this->username, $this->repo, 'get/' ) );
+		$download_link_base = implode( '/', array( 'https://bitbucket.org', $this->owner, $this->repo, 'get/' ) );
 
 		$endpoint = $this->newest_tag . '.zip';
 
@@ -237,7 +239,7 @@ class BitBucket_Plugin_Updater {
 			$response = $parser->parse_readme( $response->data );
 		}
 
-		// $this->set_readme_info( $response );
+		$this->set_readme_info( $response );
 
 		return true;
 
@@ -245,7 +247,6 @@ class BitBucket_Plugin_Updater {
 
 	/**
 	 * Set data from readme.txt.
-	 * Prefer changelog from CHANGES.md.
 	 *
 	 * @param $response
 	 *
@@ -254,6 +255,7 @@ class BitBucket_Plugin_Updater {
 	protected function set_readme_info( $response ) {
 
 		$readme = array();
+		$response = (array) $response;
 		foreach ( $this->sections as $section => $value ) {
 			if ( 'description' === $section ) {
 				continue;
@@ -310,10 +312,11 @@ endif;
 
 // $site_transient = get_site_transient( 'update_plugins' );
 // $net_updater = new StdClass();
-// $net_updater->slug = 'woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php';
-// $net_updater->new_version = '1.0.6';
+// $net_updater->slug = 'woocommerce-netsuite-integrator';
+// $net_updater->plugin = 'woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php';
+// $net_updater->new_version = '1.0.7';
 // $net_updater->url = 'https://bitbucket.org/showcase/woocommerce-netsuite-integrator';
-// $net_updater->package = 'https://bitbucket.org/showcase/woocommerce-netsuite-integrator/get/v1.0.6.zip';
+// $net_updater->package = 'https://bitbucket.org/showcase/woocommerce-netsuite-integrator/get/v1.0.7.zip';
 // $site_transient->response['woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php'] = $net_updater;
 // set_site_transient( 'update_plugins', $site_transient, 60 );
 // print_r(get_site_transient( 'update_plugins' ));
