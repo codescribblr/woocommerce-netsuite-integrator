@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.1.3
+Version: 1.1.4
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -47,7 +47,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.1.3';
+	const VERSION = '1.1.4';
 
 	/**
 	 * Instance of this class.
@@ -80,7 +80,7 @@ class SCM_WC_Netsuite_Integrator {
 		}
 
 		if ( is_admin() ) {
-			new BitBucket_Plugin_Updater( __FILE__, 'showcase', 'woocommerce-netsuite-integrator', array('username' => 'codescribblr', 'password' => 'Jrw-D3v_com'), true );
+			new BitBucket_Plugin_Updater( __FILE__, get_option('options_wni_bitbucket_repo_owner'), get_option('options_wni_bitbucket_repo_name'), array('username' => get_option('options_wni_bitbucket_username'), 'password' => get_option('options_wni_bitbucket_password')), get_option('options_wni_bitbucket_private_repository') );
 		}
 
 	}
@@ -403,6 +403,137 @@ class SCM_WC_Netsuite_Integrator {
 						'placement' => 'left',
 						'endpoint' => 0,
 					),
+					array (
+						'key' => 'field_55cffa23f223f20',
+						'label' => 'BitBucket Options',
+						'name' => '',
+						'type' => 'tab',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placement' => 'left',
+						'endpoint' => 0,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a',
+						'label' => 'BitBucket Message',
+						'name' => '',
+						'type' => 'message',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => 'To enable automatic updates for this plugin, please complete all of the fields below. If it is a private repository, you\'ll also need to check private and provide a username and password for access.',
+						'esc_html' => 1,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a1',
+						'label' => 'BitBucket Repository Owner Name',
+						'name' => 'wni_bitbucket_repo_owner',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a2',
+						'label' => 'BitBucket Repository Name',
+						'name' => 'wni_bitbucket_repo_name',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a3',
+						'label' => 'BitBucket Private Repository',
+						'name' => 'wni_bitbucket_private_repository',
+						'type' => 'true_false',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 0,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a4',
+						'label' => 'BitBucket Account Username',
+						'name' => 'wni_bitbucket_username',
+						'type' => 'text',
+						'instructions' => 'This is the username for access to a private repository.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffa23f223f20a5',
+						'label' => 'BitBucket Account Password',
+						'name' => 'wni_bitbucket_password',
+						'type' => 'password',
+						'instructions' => 'This is the password for access to a private repository',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					
 				),
 				'location' => array (
 					array (
@@ -465,11 +596,11 @@ class SCM_WC_Netsuite_Integrator {
 			}
 		}
 
-		update_option('options_wni_host_endpoint', 'https://webservices.na1.netsuite.com');
-		update_option('options_wni_email', 'stanton@wolfpackwholesale.com');
-		update_option('options_wni_password', 'Password300');
-		update_option('options_wni_account_number', '3787604');
-		update_option('options_wni_customer_sync_interval', 1);
+		add_option('options_wni_host_endpoint', 'https://webservices.na1.netsuite.com');
+		add_option('options_wni_email', '');
+		add_option('options_wni_password', '');
+		add_option('options_wni_account_number', '');
+		add_option('options_wni_customer_sync_interval', 1);
 	}
 
 	// Perform additional actions to successfully install our plugin

@@ -28,9 +28,10 @@ class BitBucket_Plugin_Updater {
          
         $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
-        $this->plugin_file = $plugin_file;
-        $this->slug = basename(dirname($this->plugin_file));
-        $this->auth = $bitbucket_auth;
+        $this->plugin_file = $plugin_file; 						// Format: /public_html/wp-content/plugins/woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php 
+        $this->plugin = plugin_basename($this->plugin_file); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
+        $this->slug = basename(dirname($this->plugin_file)); 	// Format: woocommerce-netsuite-integrator || showcase-woocommerce-netsuite-integrator-f8w009e830
+        $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this->slug);
         $this->private = $private;
         $this->sections = array(
         	'description' => '',
@@ -39,6 +40,7 @@ class BitBucket_Plugin_Updater {
         	'changelog' => '',
         	'support' => '',
         );
+        $this->init_plugin_data();
 
     }
  
@@ -68,7 +70,6 @@ class BitBucket_Plugin_Updater {
 		    return $transient;
 		}
 		// Get plugin & BitBucket release information
-		$this->init_plugin_data();
 		$this->get_repo_release_info();
 
 		// Check the versions if we need to do an update
@@ -80,7 +81,7 @@ class BitBucket_Plugin_Updater {
 		 
 		    $obj = new stdClass();
 		    $obj->slug = $this->slug;
-		    $obj->plugin = plugin_basename($this->plugin_file);
+		    $obj->plugin = $this->plugin;
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
 		    $obj->package = $package;
@@ -94,7 +95,6 @@ class BitBucket_Plugin_Updater {
     public function set_plugin_info( $false, $action, $response ) {
 
         // Get plugin & BitBucket release information
-		$this->init_plugin_data();
 		$this->get_repo_release_info();
 
 		// If nothing is found, do nothing
@@ -134,9 +134,6 @@ class BitBucket_Plugin_Updater {
  
     // Perform additional actions to successfully install our plugin
     public function post_install( $true, $hook_extra, $result ) {
-
-    	// Get plugin information
-		$this->init_plugin_data();
 
 		// Remember if our plugin was previously activated
 		$was_activated = is_plugin_active( $this->slug );
