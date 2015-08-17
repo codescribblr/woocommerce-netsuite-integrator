@@ -23,7 +23,7 @@ if ( ! defined( 'PLUGINS_DIR' ) ) {
 	define( 'PLUGINS_DIR', dirname(dirname( __FILE__ )) );
 }
 if ( ! defined( 'PLUGIN_DIR' ) ) {
-	define( 'PLUGIN_DIR', PLUGINS_DIR . DS . dirname( __FILE__ ) );
+	define( 'PLUGIN_DIR', dirname( __FILE__ ) );
 }
 if ( ! defined( 'INCLUDES_DIR' ) ) {
 	define( 'INCLUDES_DIR', PLUGIN_DIR . DS . 'includes' );
