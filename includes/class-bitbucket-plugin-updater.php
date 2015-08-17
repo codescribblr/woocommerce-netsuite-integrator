@@ -29,7 +29,7 @@ class BitBucket_Plugin_Updater {
         $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
         $this->plugin_file = $plugin_file;
-        $this->slug = plugin_basename($this->plugin_file);
+        $this->slug = basename(dirname($this->plugin_file));
         $this->auth = $bitbucket_auth;
         $this->private = $private;
         $this->sections = array(
@@ -44,7 +44,7 @@ class BitBucket_Plugin_Updater {
  
     // Get information regarding our plugin from WordPress
     private function init_plugin_data() {
-        $this->slug = plugin_basename($this->plugin_file);
+        $this->slug = basename(dirname($this->plugin_file));
 		$this->plugin_data = get_plugin_data( $this->plugin_file );
     }
  
@@ -79,8 +79,8 @@ class BitBucket_Plugin_Updater {
 		    $package = $this->construct_download_link();
 		 
 		    $obj = new stdClass();
-		    $obj->slug = dirname($this->plugin_file);
-		    $obj->plugin = $this->slug;
+		    $obj->slug = $this->slug;
+		    $obj->plugin = plugin_basename($this->plugin_file);
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
 		    $obj->package = $package;
@@ -98,13 +98,13 @@ class BitBucket_Plugin_Updater {
 		$this->get_repo_release_info();
 
 		// If nothing is found, do nothing
-		if ( empty( $response->slug ) || $response->slug != dirname($this->plugin_file) ) {
+		if ( empty( $response->slug ) || $response->slug != $this->slug ) {
 		    return $response;
 		}
 
 		// Add our plugin information
 		$response->last_updated = $this->bitbucket_API_result->timestamp;
-		$response->slug = dirname($this->plugin_file);
+		$response->slug = $this->slug;
 		$response->plugin_name  = $this->plugin_data["Name"];
 		$response->version = str_ireplace('v', '', $this->newest_tag);
 		$response->author = $this->plugin_data["AuthorName"];
