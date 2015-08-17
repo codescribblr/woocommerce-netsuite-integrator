@@ -85,7 +85,7 @@ class BitBucket_Plugin_Updater {
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
 		    $obj->package = $package;
-		    $transient->response[$this->slug] = $obj;
+		    $transient->response[$this->plugin] = $obj;
 		}
 
         return $transient;
