@@ -10,8 +10,7 @@ License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
 Bitbucket Plugin URI: https://bitbucket.org/showcase/woocoommerce-netsuite-integrator
-Bitbucket Branch: master
- */
+*/
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -24,7 +23,7 @@ if ( ! defined( 'PLUGINS_DIR' ) ) {
 	define( 'PLUGINS_DIR', dirname(dirname( __FILE__ )) );
 }
 if ( ! defined( 'PLUGIN_DIR' ) ) {
-	define( 'PLUGIN_DIR', PLUGINS_DIR . DS . 'woocommerce-netsuite-integrator' );
+	define( 'PLUGIN_DIR', PLUGINS_DIR . DS . dirname( __FILE__ ) );
 }
 if ( ! defined( 'INCLUDES_DIR' ) ) {
 	define( 'INCLUDES_DIR', PLUGIN_DIR . DS . 'includes' );
@@ -71,7 +70,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
-		add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
+		// add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
 
 		// Checks if WooCommerce is installed.
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {			
