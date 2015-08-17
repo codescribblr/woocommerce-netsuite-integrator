@@ -79,7 +79,7 @@ class BitBucket_Plugin_Updater {
 		    $package = $this->construct_download_link();
 		 
 		    $obj = new stdClass();
-		    $obj->slug = $this->repo;
+		    $obj->slug = dirname($this->plugin_file);
 		    $obj->plugin = $this->slug;
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
@@ -98,13 +98,13 @@ class BitBucket_Plugin_Updater {
 		$this->get_repo_release_info();
 
 		// If nothing is found, do nothing
-		if ( empty( $response->slug ) || $response->slug != $this->repo ) {
+		if ( empty( $response->slug ) || $response->slug != dirname($this->plugin_file) ) {
 		    return $response;
 		}
 
 		// Add our plugin information
 		$response->last_updated = $this->bitbucket_API_result->timestamp;
-		$response->slug = $this->repo;
+		$response->slug = dirname($this->plugin_file);
 		$response->plugin_name  = $this->plugin_data["Name"];
 		$response->version = str_ireplace('v', '', $this->newest_tag);
 		$response->author = $this->plugin_data["AuthorName"];
