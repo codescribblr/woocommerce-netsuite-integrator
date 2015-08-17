@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: WooCommerce NetSuite Integrator
-Plugin URI: http://wordpress.org/plugins/woocommerce-netsuite-integrator/
+Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.0.6
+Version: 1.0.7
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -48,7 +48,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.6';
+	const VERSION = '1.0.7';
 
 	/**
 	 * Instance of this class.
@@ -77,6 +77,10 @@ class SCM_WC_Netsuite_Integrator {
 			
 		} else {
 			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
+		}
+
+		if ( is_admin() ) {
+			new BitBucket_Plugin_Updater( __FILE__, 'showcase', 'woocommerce-netsuite-integrator', array('username' => 'codescribblr', 'password' => 'Jrw-D3v_com'), true );
 		}
 
 	}

@@ -35,12 +35,10 @@ class BitBucket_Plugin_Updater {
         $this->auth = $bitbucket_auth;
         $this->private = $private;
         $this->sections = array(
-        	'description',
-        	'installation',
-        	'FAQ',
-        	'screenshots',
-        	'changelog',
+        	'changelog' => '',
+        	'description' => '',
         );
+
     }
  
     // Get information regarding our plugin from WordPress
@@ -63,6 +61,7 @@ class BitBucket_Plugin_Updater {
  
     // Push in plugin version information to get the update notification
     public function set_transient( $transient ) {
+        
         // If we have checked the plugin data before, don't re-check
 		if ( empty( $transient->checked ) ) {
 		    return $transient;
@@ -72,7 +71,7 @@ class BitBucket_Plugin_Updater {
 		$this->get_repo_release_info();
 
 		// Check the versions if we need to do an update
-		$do_update = version_compare( $this->newest_tag, $transient->checked[$this->slug] );
+		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->slug] );
 
 		// Update the transient to include our updated plugin data
 		if ( $do_update == 1 ) {
@@ -80,7 +79,7 @@ class BitBucket_Plugin_Updater {
 		 
 		    $obj = new stdClass();
 		    $obj->slug = $this->slug;
-		    $obj->new_version = $this->newest_tag;
+		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
 		    $obj->package = $package;
 		    $transient->response[$this->slug] = $obj;
@@ -102,10 +101,10 @@ class BitBucket_Plugin_Updater {
 		}
 
 		// Add our plugin information
-		$response->last_updated = $this->bitbucket_API_result->published_at;
+		$response->last_updated = $this->bitbucket_API_result->timestamp;
 		$response->slug = $this->slug;
 		$response->plugin_name  = $this->plugin_data["Name"];
-		$response->version = $this->bitbucket_API_result->tag_name;
+		$response->version = str_ireplace('v', '', $this->newest_tag);
 		$response->author = $this->plugin_data["AuthorName"];
 		$response->homepage = $this->plugin_data["PluginURI"];
 		 
@@ -238,7 +237,7 @@ class BitBucket_Plugin_Updater {
 			$response = $parser->parse_readme( $response->data );
 		}
 
-		$this->set_readme_info( $response );
+		// $this->set_readme_info( $response );
 
 		return true;
 
@@ -309,6 +308,12 @@ class BitBucket_Plugin_Updater {
 
 endif;
 
-if ( is_admin() ) {
-	new BitBucket_Plugin_Updater( trailingslashit(dirname(dirname(__FILE__))).$this->slug.'.php', 'showcase', 'woocommerce-netsuite-integrator', array('username' => 'codescribblr', 'password' => 'Jrw-D3v_com'), true );
-}
+// $site_transient = get_site_transient( 'update_plugins' );
+// $net_updater = new StdClass();
+// $net_updater->slug = 'woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php';
+// $net_updater->new_version = '1.0.6';
+// $net_updater->url = 'https://bitbucket.org/showcase/woocommerce-netsuite-integrator';
+// $net_updater->package = 'https://bitbucket.org/showcase/woocommerce-netsuite-integrator/get/v1.0.6.zip';
+// $site_transient->response['woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php'] = $net_updater;
+// set_site_transient( 'update_plugins', $site_transient, 60 );
+// print_r(get_site_transient( 'update_plugins' ));
