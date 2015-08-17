@@ -108,7 +108,7 @@ class SCM_WC_Netsuite_Integrator {
 			$objects = scandir($dir); 
 			foreach ($objects as $object) { 
 				if ($object != "." && $object != "..") { 
-					if (filetype($dir."/".$object) == "dir") recursively_rmdir($dir."/".$object); else unlink($dir."/".$object); 
+					if (filetype($dir."/".$object) == "dir") self::recursively_rmdir($dir."/".$object); else unlink($dir."/".$object); 
 				} 
 			} 
 			reset($objects); 
