@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.0.8
+Version: 1.1.0
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -48,7 +48,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.8';
+	const VERSION = '1.1.0';
 
 	/**
 	 * Instance of this class.
@@ -71,6 +71,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
+		add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
 
 		// Checks if WooCommerce is installed.
 		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {			
@@ -471,6 +472,20 @@ class SCM_WC_Netsuite_Integrator {
 		update_option('options_wni_account_number', '3787604');
 		update_option('options_wni_customer_sync_interval', 1);
 	}
+
+	// Perform additional actions to successfully install our plugin
+    public function post_install( $true, $hook_extra, $result ) {
+
+		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
+		// reponame-tagname change it to our original one:
+		global $wp_filesystem;
+		$plugin_folder = PLUGIN_DIR;
+		$wp_filesystem->move( $result['destination'], $plugin_folder );
+		$result['destination'] = $plugin_folder;
+		 
+		return $result;
+
+    }
 
 	/**
 	 * Uninstall Method 
