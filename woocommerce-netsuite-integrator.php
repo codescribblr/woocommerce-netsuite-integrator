@@ -645,7 +645,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_option('options_wni_account_number', '');
 		add_option('options_wni_customer_sync_interval', 1);
 
-		self::post_install($plugin);
+		do_action('wni_post_install', $plugin);
 	}
 
 	// Perform additional actions to successfully install our plugin
@@ -743,6 +743,7 @@ register_activation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'instal
 // Plugin uninstall
 register_deactivation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'uninstall' ) );
 
+add_action( 'wni_post_install', array( 'SCM_WC_Netsuite_Integrator', 'install' ) );
 add_action( 'plugins_loaded', array( 'SCM_WC_Netsuite_Integrator', 'get_instance' ) );
 
 endif;
