@@ -138,18 +138,18 @@ class BitBucket_Plugin_Updater {
     public function post_install( $true, $hook_extra, $result ) {
 
 		// Remember if our plugin was previously activated
-		$was_activated = is_plugin_active( $this->slug );
+		$was_activated = is_plugin_active( $this->plugin );
 
-		// Since we are hosted in GitHub, our plugin folder would have a dirname of
+		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
 		global $wp_filesystem;
-		$plugin_folder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $this->slug );
+		$plugin_folder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . $this->plugin;
 		$wp_filesystem->move( $result['destination'], $plugin_folder );
 		$result['destination'] = $plugin_folder;
 
         // Re-activate plugin if needed
 		if ( $was_activated ) {
-		    $activate = activate_plugin( $this->slug );
+		    $activate = activate_plugin( $this->plugin );
 		}
 		 
 		return $result;

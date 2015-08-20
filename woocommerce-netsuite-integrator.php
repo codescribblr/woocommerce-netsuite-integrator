@@ -34,6 +34,9 @@ if ( ! defined( 'LIB_DIR' ) ) {
 if ( ! defined( 'BUNDLED_PLUGINS_DIR' ) ) {
 	define( 'BUNDLED_PLUGINS_DIR', LIB_DIR . DS . 'bundled_plugins' );
 }
+if ( ! defined( 'PLUGIN_SLUG' ) ) {
+	define( 'PLUGIN_SLUG', 'woocommerce-netsuite-integrator' );
+}
 
 if ( ! class_exists( 'SCM_WC_Netsuite_Integrator' ) ) :
 
@@ -87,7 +90,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
-		add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
+		add_filter( 'upgrader_post_install', array( $this, 'post_upgrade' ), 10, 3 );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -353,6 +356,22 @@ class SCM_WC_Netsuite_Integrator {
 						'disabled' => 0,
 					),
 					array (
+						'key' => 'field_55cffbeab83241292',
+						'label' => 'Delete All Data on Uninstall?',
+						'name' => 'wni_delete_data_on_uninstall',
+						'type' => 'true_false',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 0,
+					),
+					array (
 						'key' => 'field_55cffb13b831e',
 						'label' => 'Customer Options',
 						'name' => '',
@@ -581,6 +600,10 @@ class SCM_WC_Netsuite_Integrator {
 	 * Install method.
 	 */
 	public static function install() {
+
+		self::log_action('install_run', 'running install function @ '.date('YMD:HiS'), ABSPATH.'actionlog.log');
+		$plugin = basename(dirname(__FILE__)).'/'.basename(__FILE__);
+
 		// Install files and folders for uploading files and prevent hotlinking
 		$upload_dir =  wp_upload_dir();
 
@@ -621,22 +644,29 @@ class SCM_WC_Netsuite_Integrator {
 		add_option('options_wni_password', '');
 		add_option('options_wni_account_number', '');
 		add_option('options_wni_customer_sync_interval', 1);
+
+		self::post_install($plugin);
 	}
 
 	// Perform additional actions to successfully install our plugin
-    public function post_install( $true, $hook_extra, $result ) {
+    public static function post_install( $plugin ) {
 
-		self::log_action('post_install_hook_run', print_r($result, true), ABSPATH.'actionlog.log');
+
+
+		// Remember if our plugin was previously activated
+		$was_activated = is_plugin_active( $plugin );
 
 		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
-		// global $wp_filesystem;
-		// $plugin_folder = PLUGIN_DIR;
-		// $wp_filesystem->move( $result['destination'], $plugin_folder );
-		// $result['destination'] = $plugin_folder;
-		 
-		return $result;
+		global $wp_filesystem;
+		$plugin_folder = WP_PLUGIN_DIR . DS . PLUGIN_SLUG;
+		$wp_filesystem->move( WP_PLUGIN_DIR . DS . basename($plugin), $plugin_folder );
 
+        // Re-activate plugin if needed
+		if ( $was_activated ) {
+		    $activate = activate_plugin( $plugin );
+		}
+		 
     }
 
 	/**
@@ -656,11 +686,13 @@ class SCM_WC_Netsuite_Integrator {
 			self::recursively_rmdir($dir['base']);
 		}
 
-		delete_option('options_wni_host_endpoint');
-		delete_option('options_wni_email');
-		delete_option('options_wni_password');
-		delete_option('options_wni_account_number');
-		delete_option('options_wni_customer_sync_interval');
+		if(get_option('options_wni_delete_data_on_uninstall')){
+			delete_option('options_wni_host_endpoint');
+			delete_option('options_wni_email');
+			delete_option('options_wni_password');
+			delete_option('options_wni_account_number');
+			delete_option('options_wni_customer_sync_interval');
+		}
 
 		wp_clear_scheduled_hook( 'woocommerce_netsuite_integrator_customer_cron' );
 	}
@@ -705,7 +737,7 @@ class SCM_WC_Netsuite_Integrator {
 	}
 
 }
-
+global $wp_filesystem;
 // Plugin install.
 register_activation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'install' ) );
 // Plugin uninstall
