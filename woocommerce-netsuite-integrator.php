@@ -626,7 +626,7 @@ class SCM_WC_Netsuite_Integrator {
 	// Perform additional actions to successfully install our plugin
     public function post_install( $true, $hook_extra, $result ) {
 
-		self::log_action('post_install_hook_run', print_r($result, true));
+		self::log_action('post_install_hook_run', print_r($result, true), ABSPATH.'actionlog.log');
 
 		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
