@@ -90,7 +90,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
-		add_filter( 'upgrader_post_install', array( $this, 'post_upgrade' ), 10, 3 );
+		// add_filter( 'upgrader_post_install', array( $this, 'post_upgrade' ), 10, 3 );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -601,9 +601,6 @@ class SCM_WC_Netsuite_Integrator {
 	 */
 	public static function install() {
 
-		self::log_action('install_run', 'running install function @ '.date('YMD:HiS'), ABSPATH.'actionlog.log');
-		$plugin = basename(dirname(__FILE__)).'/'.basename(__FILE__);
-
 		// Install files and folders for uploading files and prevent hotlinking
 		$upload_dir =  wp_upload_dir();
 
@@ -645,7 +642,6 @@ class SCM_WC_Netsuite_Integrator {
 		add_option('options_wni_account_number', '');
 		add_option('options_wni_customer_sync_interval', 1);
 
-		do_action('wni_post_install', $plugin);
 	}
 
 	// Perform additional actions to successfully install our plugin
@@ -737,13 +733,11 @@ class SCM_WC_Netsuite_Integrator {
 	}
 
 }
-global $wp_filesystem;
 // Plugin install.
 register_activation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'install' ) );
 // Plugin uninstall
 register_deactivation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'uninstall' ) );
 
-add_action( 'wni_post_install', array( 'SCM_WC_Netsuite_Integrator', 'install' ) );
 add_action( 'plugins_loaded', array( 'SCM_WC_Netsuite_Integrator', 'get_instance' ) );
 
 endif;
