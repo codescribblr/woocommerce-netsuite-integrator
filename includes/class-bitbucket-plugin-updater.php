@@ -37,8 +37,10 @@ class BitBucket_Plugin_Updater {
         	'description' => '',
         	'installation' => '',
         	'FAQ' => '',
+        	'screenshots',
         	'changelog' => '',
         	'support' => '',
+        	'upgrade_notice' => '',
         );
         $this->init_plugin_data();
 
