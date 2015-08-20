@@ -87,7 +87,7 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
-		// add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
+		add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -626,12 +626,14 @@ class SCM_WC_Netsuite_Integrator {
 	// Perform additional actions to successfully install our plugin
     public function post_install( $true, $hook_extra, $result ) {
 
+		self::log_action('post_install_hook_run', print_r($result, true));
+
 		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
-		global $wp_filesystem;
-		$plugin_folder = PLUGIN_DIR;
-		$wp_filesystem->move( $result['destination'], $plugin_folder );
-		$result['destination'] = $plugin_folder;
+		// global $wp_filesystem;
+		// $plugin_folder = PLUGIN_DIR;
+		// $wp_filesystem->move( $result['destination'], $plugin_folder );
+		// $result['destination'] = $plugin_folder;
 		 
 		return $result;
 
