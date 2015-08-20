@@ -61,7 +61,24 @@ class SCM_WC_Netsuite_Integrator {
 	 */
 	private function __construct() {
 		
-		$this->includes();
+		$this->netsuite_config = array(
+			"host"      => get_option('options_wni_host_endpoint'),
+			"email"     => get_option('options_wni_email'),
+			"password"  => get_option('options_wni_password'),
+			"role"      => "3", // Must be an admin to have rights
+			"account"   => get_option('options_wni_account_number'),
+		);
+
+		// Checks if NetSuite Configuration Options are set.
+		if ( !$this->netsuite_config['host'] || !$this->netsuite_config['email'] || !$this->netsuite_config['password'] || !$this->netsuite_config['role'] || !$this->netsuite_config['account'] ) {			
+			add_action( 'admin_notices', array( $this, 'netsuite_configuration_missing_notice' ) );
+			$this->requires();
+			$this->setup_options();
+			return false;
+		} else {
+			$this->requires();
+			$this->includes();
+		}
 		$this->setup_options();
 		$upload_dir =  wp_upload_dir();
 
@@ -72,15 +89,10 @@ class SCM_WC_Netsuite_Integrator {
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
 		// add_filter( 'upgrader_post_install', array( $this, 'post_install' ), 10, 3 );
 
-		// Checks if WooCommerce is installed.
-		if ( defined( 'WC_VERSION' ) && version_compare( WC_VERSION, '2.3', '>=' ) ) {			
-			
-		} else {
-			add_action( 'admin_notices', array( $this, 'woocommerce_missing_notice' ) );
-		}
-
 		if ( is_admin() ) {
-			new BitBucket_Plugin_Updater( __FILE__, get_option('options_wni_bitbucket_repo_owner'), get_option('options_wni_bitbucket_repo_name'), array('username' => get_option('options_wni_bitbucket_username'), 'password' => get_option('options_wni_bitbucket_password')), get_option('options_wni_bitbucket_private_repository') );
+			if( class_exists('BitBucket_Plugin_Updater') ) {
+				new BitBucket_Plugin_Updater( __FILE__, get_option('options_wni_bitbucket_repo_owner'), get_option('options_wni_bitbucket_repo_name'), array('username' => get_option('options_wni_bitbucket_username'), 'password' => get_option('options_wni_bitbucket_password')), get_option('options_wni_bitbucket_private_repository') );
+			}
 		}
 
 	}
@@ -90,7 +102,8 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	*/
 	public static function log_action($action, $message="", $logfile=false) {
-	    $logfile = ($logfile) ? $logfile : $_SERVER['DOCUMENT_ROOT'].'/wp-content/uploads/wc-netsuite-logs/'.date("Y-m-d").'.log';
+	    $upload_dir = wp_upload_dir();
+	    $logfile = ($logfile) ? $logfile : $upload_dir['basedir'] . '/wc-netsuite-logs/'.date("Y-m-d").'.log';
 	    $new = file_exists($logfile) ? false : true;
 	    if($handle = fopen($logfile, 'a')) { // append
 	        $timestamp = strftime("%Y-%m-%d %H:%M:%S", time());
@@ -208,12 +221,19 @@ class SCM_WC_Netsuite_Integrator {
 	 * Includes.
 	 */
 	private function includes() {
-		require_once LIB_DIR . DS . 'tgmpa' . DS . 'class-tgm-plugin-activation.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-service.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-customer.php';
+		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-product.php';
 		include_once INCLUDES_DIR . DS . 'class-bitbucket-plugin-updater.php';
 		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-automattic-readme.php';
 		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-parsedown.php';
+	}
+
+	/**
+	 * Requires.
+	 */
+	private function requires() {
+		require_once LIB_DIR . DS . 'tgmpa' . DS . 'class-tgm-plugin-activation.php';
 	}
 
 	/**
@@ -648,14 +668,14 @@ class SCM_WC_Netsuite_Integrator {
 		$netsuite_customer_integrator = new SCM_WC_Netsuite_Integrator_Customer();
 		// Schedule Cron Job Event
 		if ( ! wp_next_scheduled( 'woocommerce_netsuite_integrator_customer_cron' ) ) {
-			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_custom_schedule', 'woocommerce_netsuite_integrator_customer_cron' );
+			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_customer_sync_schedule', 'woocommerce_netsuite_integrator_customer_cron' );
 		}
 		add_action( 'woocommerce_netsuite_integrator_customer_cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
 	}
 
 	public function woocommerce_netsuite_custom_schedule($schedules) {
 	    
-	    $schedules['woocommerce_netsuite_custom_schedule'] = array(
+	    $schedules['woocommerce_netsuite_customer_sync_schedule'] = array(
 	        'interval' => get_option('options_wni_customer_sync_interval') * 60 * 60, // number of hours * 60 minutes * 60 seconds
 	        'display'  => __( 'WooCommerce NetSuite Integrator Custom Schedule' ),
 	    );
@@ -671,6 +691,15 @@ class SCM_WC_Netsuite_Integrator {
 	 */
 	public function woocommerce_missing_notice() {
 		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce NetSuite Integrator depends on the last version of %s or later to work!', 'woocommerce-netsuite-integrator' ), '<a href="http://www.woothemes.com/woocommerce/" target="_blank">' . __( 'WooCommerce 2.4+', 'woocommerce-netsuite-integrator' ) . '</a>' ) . '</p></div>';
+	}
+
+	/**
+	 * Missing configuration options.
+	 *
+	 * @return string
+	 */
+	public function netsuite_configuration_missing_notice() {
+		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce NetSuite Integrator requires that you provide all the required %s', 'woocommerce-netsuite-integrator' ), '<a href="/wp-admin/admin.php?page=acf-options-netsuite-settings">' . __( 'NetSuite configuration options!') . '</a>' ) . '</p></div>';
 	}
 
 }

@@ -34,6 +34,25 @@ class SCM_WC_Netsuite_Integrator_Service {
 		
 	}
 
+	/*
+	 * Usage self::log_action('error', 'Check out this sweet error!');
+	 *
+	*/
+	public static function log_action($action, $message="", $logfile=false) {
+		$upload_dir = wp_upload_dir();
+	    $logfile = ($logfile) ? $logfile : $upload_dir['basedir'] . '/wc-netsuite-logs/'.date("Y-m-d").'.log';
+	    $new = file_exists($logfile) ? false : true;
+	    if($handle = fopen($logfile, 'a')) { // append
+	        $timestamp = strftime("%Y-%m-%d %H:%M:%S", time());
+	        $content = "{$timestamp} | {$action}: {$message}\n";
+	        fwrite($handle, $content);
+	        fclose($handle);
+	        if($new) { chmod($logfile, 0755); }
+	    } else {
+	        return false;
+	    }
+	}
+
 	/**
 	 * Includes.
 	 */
