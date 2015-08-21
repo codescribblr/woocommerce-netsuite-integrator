@@ -90,7 +90,6 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
-		// add_filter( 'upgrader_post_install', array( $this, 'post_upgrade' ), 10, 3 );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -598,9 +597,9 @@ class SCM_WC_Netsuite_Integrator {
 	}
 
 	/**
-	 * Install method.
+	 * Activate method.
 	 */
-	public static function install() {
+	public static function activate() {
 
 		// Install files and folders for uploading files and prevent hotlinking
 		$upload_dir =  wp_upload_dir();
@@ -645,26 +644,13 @@ class SCM_WC_Netsuite_Integrator {
 
 	}
 
-	// Perform additional actions to successfully install our plugin
-    public static function post_install( $plugin ) {
+	/**
+	 * Deactivate Method 
+	 */
+	public static function deactivate() {
 
-
-
-		// Remember if our plugin was previously activated
-		$was_activated = is_plugin_active( $plugin );
-
-		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
-		// reponame-tagname change it to our original one:
-		global $wp_filesystem;
-		$plugin_folder = WP_PLUGIN_DIR . DS . PLUGIN_SLUG;
-		$wp_filesystem->move( WP_PLUGIN_DIR . DS . basename($plugin), $plugin_folder );
-
-        // Re-activate plugin if needed
-		if ( $was_activated ) {
-		    $activate = activate_plugin( $plugin );
-		}
-		 
-    }
+		wp_clear_scheduled_hook( 'woocommerce_netsuite_integrator_customer_cron' );
+	}
 
 	/**
 	 * Uninstall Method 
@@ -691,7 +677,6 @@ class SCM_WC_Netsuite_Integrator {
 			delete_option('options_wni_customer_sync_interval');
 		}
 
-		wp_clear_scheduled_hook( 'woocommerce_netsuite_integrator_customer_cron' );
 	}
 
 	public function setup_cron() {
@@ -734,10 +719,12 @@ class SCM_WC_Netsuite_Integrator {
 	}
 
 }
-// Plugin install.
-register_activation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'install' ) );
+// Plugin activation.
+register_activation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'activate' ) );
+// Plugin deactivation
+register_deactivation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'deactivate' ) );
 // Plugin uninstall
-register_deactivation_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'uninstall' ) );
+register_uninstall_hook( __FILE__, array( 'SCM_WC_Netsuite_Integrator', 'uninstall' ) );
 
 add_action( 'plugins_loaded', array( 'SCM_WC_Netsuite_Integrator', 'get_instance' ) );
 
