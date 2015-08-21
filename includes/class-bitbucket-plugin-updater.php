@@ -30,7 +30,7 @@ class BitBucket_Plugin_Updater {
         $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
         $this->plugin_file = $plugin_file; 											// Format: /public_html/wp-content/plugins/woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php 
-        $this->proper_folder_name = dirname(plugin_basename($this->plugin_file)); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
+        $this->proper_folder_name = dirname($this->plugin_file); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
         $this->slug = plugin_basename($this->plugin_file); 							// Format: woocommerce-netsuite-integrator || showcase-woocommerce-netsuite-integrator-f8w009e830
         $this->sslverify = true;
         $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this);
@@ -161,6 +161,8 @@ class BitBucket_Plugin_Updater {
     public function post_install( $true, $hook_extra, $result ) {
 
     	self::log_action( 'post_install', print_r($result, true), trailingslashit(ABSPATH) . 'actionlog.log' );
+    	self::log_action( 'post_install_updater_object', print_r($this, true), trailingslashit(ABSPATH) . 'actionlog.log' );
+
 
     	include_once ABSPATH.'/wp-admin/includes/plugin.php';
 		// Remember if our plugin was previously activated
