@@ -35,6 +35,7 @@ class BitBucket_Plugin_Updater {
         $this->sslverify = true;
         $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this);
         $this->private = $private;
+        $this->current_version = $this->get_current_version();
         $this->sections = array(
         	'description' => '',
         	'installation' => '',
@@ -86,7 +87,10 @@ class BitBucket_Plugin_Updater {
     // Push in plugin version information to get the update notification
     public function set_transient( $transient ) {
 
-    	self::log_action('transient_update_plugins', print_r($transient, true), ABSPATH . '/actionlog.log');
+    	if($_GET['force-check']==1){
+    		delete_transient('update_plugins');
+    		$this->set_current_version(false);
+    	}
         
         // If we have checked the plugin data before, don't re-check
 		if ( empty( $transient->checked ) ) {
@@ -97,6 +101,7 @@ class BitBucket_Plugin_Updater {
 
 		// Check the versions if we need to do an update
 		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->plugin] );
+		// $do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $this->current_version );
 
 		// Update the transient to include our updated plugin data
 		if ( $do_update == 1 ) {		 
@@ -112,15 +117,10 @@ class BitBucket_Plugin_Updater {
     }
  
     // Push in plugin version information to display in the details lightbox
-    public function set_plugin_info( $false, $action, $response ) {
-
-    	// self::log_action('set_plugin_info_response', print_r($response, true), ABSPATH . '/actionlog.log');
-    	
+    public function set_plugin_info( $false, $action, $response ) {    	
 
         // Get plugin & BitBucket release information
 		$this->get_repo_release_info();
-
-		// self::log_action('updater_object', print_r($this, true), ABSPATH . '/actionlog.log');
 
 		// If nothing is found, do nothing
 		if ( !isset( $response->slug ) || $response->slug != $this->proper_folder_name ) {
@@ -153,8 +153,6 @@ class BitBucket_Plugin_Updater {
 		$response->donate = $this->donate;
 		$response->contributors = $this->contributors;
 
-		self::log_action('updater_object', print_r($this, true), ABSPATH . '/actionlog.log');
-
         return $response;
 
     }
@@ -162,23 +160,28 @@ class BitBucket_Plugin_Updater {
     // Perform additional actions to successfully install our plugin
     public function post_install( $true, $hook_extra, $result ) {
 
+    	self::log_action( 'post_install', print_r($result, true), trailingslashit(ABSPATH) . 'actionlog.log' );
+
+    	include_once ABSPATH.'/wp-admin/includes/plugin.php';
 		// Remember if our plugin was previously activated
-		$was_activated = is_plugin_active( $this->plugin );
+		$was_activated = is_plugin_active( $this->slug );
 
 		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
 		global $wp_filesystem;
-		$plugin_folder = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . $this->plugin;
-		$wp_filesystem->move( $result['destination'], $plugin_folder );
-		$result['destination'] = $plugin_folder;
+		$wp_filesystem->move( $result['destination'], $this->proper_folder_name );
+		$result['destination'] = $this->proper_folder_name;
 
         // Re-activate plugin if needed
 		if ( $was_activated ) {
-		    $activate = activate_plugin( $this->plugin );
+		    $activate = activate_plugin( $this->slug );
 		    // Output the update message
 			$fail  = __( 'The plugin has been updated, but could not be reactivated. Please reactivate it manually.', 'woocommerce-netsuite-integrator' );
 			$success = __( 'Plugin reactivated successfully.', 'woocommerce-netsuite-integrator' );
 			echo is_wp_error( $activate ) ? $fail : $success;
+			if( !is_wp_error( $activate ) ) {
+				$this->set_current_version(str_ireplace('v', '', $this->newest_tag));
+			}
 		}
 		 
 		return $result;
@@ -227,6 +230,20 @@ class BitBucket_Plugin_Updater {
 
 	}
 
+	public function set_current_version($version) {
+		if($version===false){
+			delete_site_transient( md5('woocommerce-netsuite-integrator') . '_current_version' );
+		} else {
+			set_site_transient( md5('woocommerce-netsuite-integrator') . '_current_version', $version, 10);
+		}
+	}
+
+	public function get_current_version() {
+		$cv = ($current_version = get_site_transient( md5('woocommerce-netsuite-integrator') . '_current_version' ))===false ? $current_version : '0.0.0';
+		$this->current_version = $cv;
+		return $cv;
+	}
+
 	/**
 	 * Get the remote info to for tags.
 	 *
@@ -270,8 +287,6 @@ class BitBucket_Plugin_Updater {
 
 		$this->set_readme_info( $response );
 
-		self::log_action('parsed_readme_response', print_r($response, true), ABSPATH . '/actionlog.log');
-
 		return true;
 
 	}
@@ -290,8 +305,8 @@ class BitBucket_Plugin_Updater {
 			$this->sections[$section] = $value;
 		}
 
-		unset( $response['sections']['screenshots'] );
-		// unset( $response['sections']['installation'] );
+		unset( $this->sections['screenshots'] );
+		// unset( $this->sections['installation'] );
 		$this->sections     = $this->sections;
 		$this->tested      	= $response['tested_up_to'];
 		$this->requires    	= $response['requires_at_least'];
