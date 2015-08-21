@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.1.7
+Version: 1.1.8
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -50,7 +50,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.1.7';
+	const VERSION = '1.1.8';
 
 	/**
 	 * Instance of this class.
@@ -229,7 +229,8 @@ class SCM_WC_Netsuite_Integrator {
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-product.php';
 		include_once INCLUDES_DIR . DS . 'class-bitbucket-plugin-updater.php';
 		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-automattic-readme.php';
-		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-parsedown.php';
+		// include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-parsedown.php';
+		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-markdown.php';
 	}
 
 	/**

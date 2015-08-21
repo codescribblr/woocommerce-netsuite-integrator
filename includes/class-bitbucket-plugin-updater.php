@@ -22,33 +22,52 @@ class BitBucket_Plugin_Updater {
  
     function __construct( $plugin_file, $bitbucket_project_owner, $bitbucket_project_name, $bitbucket_auth, $private = false ) {
         add_filter( "pre_set_site_transient_update_plugins", array( $this, "set_transient" ) );
-        add_filter( "plugins_api_result", array( $this, "set_plugin_info" ), 10, 3 );
+        add_filter( "plugins_api", array( $this, "set_plugin_info" ), 10, 3 );
         add_filter( "upgrader_post_install", array( $this, "post_install" ), 10, 3 );
         add_filter( 'http_request_args', array( $this, 'maybe_authenticate_http' ), 10, 2 );
+        add_filter( 'http_request_args', array( $this, 'http_request_sslverify' ), 10, 2 );
          
         $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
-        $this->plugin_file = $plugin_file; 						// Format: /public_html/wp-content/plugins/woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php 
-        $this->plugin = plugin_basename($this->plugin_file); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
-        $this->slug = basename(dirname($this->plugin_file)); 	// Format: woocommerce-netsuite-integrator || showcase-woocommerce-netsuite-integrator-f8w009e830
-        $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this->slug);
+        $this->plugin_file = $plugin_file; 											// Format: /public_html/wp-content/plugins/woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php 
+        $this->proper_folder_name = dirname(plugin_basename($this->plugin_file)); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
+        $this->slug = plugin_basename($this->plugin_file); 							// Format: woocommerce-netsuite-integrator || showcase-woocommerce-netsuite-integrator-f8w009e830
+        $this->sslverify = true;
+        $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this);
         $this->private = $private;
         $this->sections = array(
         	'description' => '',
         	'installation' => '',
-        	'FAQ' => '',
-        	'screenshots',
+        	'screenshots' => '',
         	'changelog' => '',
-        	'support' => '',
         	'upgrade_notice' => '',
         );
         $this->init_plugin_data();
 
     }
+
+    /*
+	 * Usage self::log_action('error', 'Check out this sweet error!');
+	 *
+	*/
+	public static function log_action($action, $message="", $logfile=false) {
+	    $upload_dir = wp_upload_dir();
+	    $logfile = ($logfile) ? $logfile : $upload_dir['basedir'] . '/' . date("Y-m-d").'.log';
+	    $new = file_exists($logfile) ? false : true;
+	    if($handle = fopen($logfile, 'a')) { // append
+	        $timestamp = strftime("%Y-%m-%d %H:%M:%S", time());
+	        $content = "{$timestamp} | {$action}: {$message}\n";
+	        fwrite($handle, $content);
+	        fclose($handle);
+	        if($new) { chmod($logfile, 0755); }
+	    } else {
+	        return false;
+	    }
+	}
  
     // Get information regarding our plugin from WordPress
     private function init_plugin_data() {
-        $this->slug = basename(dirname($this->plugin_file));
+    	include_once ABSPATH.'/wp-admin/includes/plugin.php';
 		$this->plugin_data = get_plugin_data( $this->plugin_file );
     }
  
@@ -60,12 +79,14 @@ class BitBucket_Plugin_Updater {
 		}
 
 		$api_result = $this->get_remote_tag();
-		$this->bitbucket_API_result = $api_result[$this->newest_tag];
+		$this->bitbucket_API_result = $api_result->{$this->newest_tag};
 
     }
  
     // Push in plugin version information to get the update notification
     public function set_transient( $transient ) {
+
+    	self::log_action('transient_update_plugins', print_r($transient, true), ABSPATH . '/actionlog.log');
         
         // If we have checked the plugin data before, don't re-check
 		if ( empty( $transient->checked ) ) {
@@ -75,19 +96,16 @@ class BitBucket_Plugin_Updater {
 		$this->get_repo_release_info();
 
 		// Check the versions if we need to do an update
-		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->slug] );
+		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->plugin] );
 
 		// Update the transient to include our updated plugin data
-		if ( $do_update == 1 ) {
-		    $package = $this->construct_download_link();
-		 
+		if ( $do_update == 1 ) {		 
 		    $obj = new stdClass();
-		    $obj->slug = $this->slug;
-		    $obj->plugin = $this->plugin;
+		    $obj->slug = $this->proper_folder_name;
 		    $obj->new_version = str_ireplace('v', '', $this->newest_tag);
 		    $obj->url = $this->plugin_data["PluginURI"];
-		    $obj->package = $package;
-		    $transient->response[$this->plugin] = $obj;
+		    $obj->package = $this->construct_download_link();
+		    $transient->response[$this->slug] = $obj;
 		}
 
         return $transient;
@@ -96,16 +114,21 @@ class BitBucket_Plugin_Updater {
     // Push in plugin version information to display in the details lightbox
     public function set_plugin_info( $false, $action, $response ) {
 
+    	// self::log_action('set_plugin_info_response', print_r($response, true), ABSPATH . '/actionlog.log');
+    	
+
         // Get plugin & BitBucket release information
 		$this->get_repo_release_info();
 
+		// self::log_action('updater_object', print_r($this, true), ABSPATH . '/actionlog.log');
+
 		// If nothing is found, do nothing
-		if ( empty( $response->slug ) || $response->slug != $this->slug ) {
-		    return $response;
+		if ( !isset( $response->slug ) || $response->slug != $this->proper_folder_name ) {
+		    return false;
 		}
 
 		// Add our plugin information
-		$response->last_updated = $this->bitbucket_API_result->timestamp;
+		$response->last_updated = date('Y-m-d H:i:s', strtotime($this->bitbucket_API_result->timestamp));
 		$response->slug = $this->slug;
 		$response->plugin_name  = $this->plugin_data["Name"];
 		$response->version = str_ireplace('v', '', $this->newest_tag);
@@ -120,7 +143,7 @@ class BitBucket_Plugin_Updater {
 		$response->download_link = $download_link;
 
 		// We're going to parse the BitBucket markdown release notes, include the parser
-		// require_once( plugin_dir_path( __FILE__ ) . "class-parsedown.php" );
+		// require_once( dirname( __FILE__ ) . "/automattic-readme/class-parsedown.php" );
 
 		$this->get_remote_readme();
 
@@ -129,6 +152,8 @@ class BitBucket_Plugin_Updater {
 		$response->requires = $this->requires;
 		$response->donate = $this->donate;
 		$response->contributors = $this->contributors;
+
+		self::log_action('updater_object', print_r($this, true), ABSPATH . '/actionlog.log');
 
         return $response;
 
@@ -150,6 +175,10 @@ class BitBucket_Plugin_Updater {
         // Re-activate plugin if needed
 		if ( $was_activated ) {
 		    $activate = activate_plugin( $this->plugin );
+		    // Output the update message
+			$fail  = __( 'The plugin has been updated, but could not be reactivated. Please reactivate it manually.', 'woocommerce-netsuite-integrator' );
+			$success = __( 'Plugin reactivated successfully.', 'woocommerce-netsuite-integrator' );
+			echo is_wp_error( $activate ) ? $fail : $success;
 		}
 		 
 		return $result;
@@ -216,7 +245,7 @@ class BitBucket_Plugin_Updater {
 
 		$this->parse_tags( $response );
 
-		return true;
+		return $response;
 
 	}
 
@@ -227,20 +256,21 @@ class BitBucket_Plugin_Updater {
 	 */
 	public function get_remote_readme() {
 
-		$response = wp_remote_get( 'https://bitbucket.org/api/1.0/repositories/'.$this->owner.'/'.$this->repo.'/src/master/readme.txt' );
-		$response = json_decode( wp_remote_retrieve_body( $response ) );
+		$response = wp_remote_get( 'https://api.bitbucket.org/1.0/repositories/'.$this->owner.'/'.$this->repo.'/raw/'.$this->newest_tag.'/readme.txt' );
+		$response = wp_remote_retrieve_body( $response );
 
 		if ( ! $response ) {
-			$response = new \stdClass();
-			$response->message = 'No readme found';
+			$response = array();
 		}
 
-		if ( $response && isset( $response->data ) ) {
+		if ( $response ) {
 			$parser   = new Automattic_Readme;
-			$response = $parser->parse_readme( $response->data );
+			$response = $parser->parse_readme( $response );
 		}
 
 		$this->set_readme_info( $response );
+
+		self::log_action('parsed_readme_response', print_r($response, true), ABSPATH . '/actionlog.log');
 
 		return true;
 
@@ -255,28 +285,18 @@ class BitBucket_Plugin_Updater {
 	 */
 	protected function set_readme_info( $response ) {
 
-		$readme = array();
 		$response = (array) $response;
-		foreach ( $this->sections as $section => $value ) {
-			if ( 'description' === $section ) {
-				continue;
-			}
-			$readme['sections/' . $section ] = $value;
-		}
-		foreach ( $readme as $key => $value ) {
-			$key = explode( '/', $key );
-			if ( ! empty( $value ) && 'sections' === $key[0] ) {
-				unset( $response['sections'][ $key[1] ] );
-			}
+		foreach ( $response['sections'] as $section => $value ) {
+			$this->sections[$section] = $value;
 		}
 
 		unset( $response['sections']['screenshots'] );
-		unset( $response['sections']['installation'] );
-		$this->sections     = array_merge( (array) $this->sections, (array) $response['sections'] );
-		$this->tested       = $response['tested_up_to'];
-		$this->requires     = $response['requires_at_least'];
-		$this->donate       = $response['donate_link'];
-		$this->contributors = $response['contributors'];
+		// unset( $response['sections']['installation'] );
+		$this->sections     = $this->sections;
+		$this->tested      	= $response['tested_up_to'];
+		$this->requires    	= $response['requires_at_least'];
+		$this->donate      	= $response['donate_link'];
+		$this->contributors	= $response['contributors'];
 
 		return true;
 
@@ -305,6 +325,20 @@ class BitBucket_Plugin_Updater {
 
 		return $args;
 
+	}
+
+	/**
+	 * Callback fn for the http_request_args filter
+	 *
+	 * @param unknown $args
+	 * @param unknown $url
+	 *
+	 * @return mixed
+	 */
+	public function http_request_sslverify( $args, $url ) {
+		if ( $this->construct_download_link() == $url )
+			$args[ 'sslverify' ] = $this->sslverify;
+		return $args;
 	}
 
 }

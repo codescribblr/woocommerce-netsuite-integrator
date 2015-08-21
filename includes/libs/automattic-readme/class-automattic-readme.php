@@ -165,7 +165,7 @@ Class Automattic_Readme {
 			$split = preg_split( '#<h4>(.*?)</h4>#', $final_sections['upgrade_notice'], -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY );
 			for ( $i = 0; $i < count( $split ); $i += 2 )
 				$upgrade_notice[$this->sanitize_text( $split[$i] )] = substr( $this->sanitize_text( $split[$i + 1] ), 0, 300 );
-			unset( $final_sections['upgrade_notice'] );
+			// unset( $final_sections['upgrade_notice'] );
 		}
 
 		// No description?
@@ -251,11 +251,12 @@ Class Automattic_Readme {
 	 */
 	public function filter_text( $text, $markdown = false ) { // fancy, Markdown
 		$text = trim($text);
-		$text = call_user_func( array( get_parent_class( $this ), 'code_trick' ), $text, $markdown ); // A better parser than Markdown's for: backticks -> CODE
+		$text = call_user_func( array( __CLASS__, 'code_trick' ), $text, $markdown ); // A better parser than Markdown's for: backticks -> CODE
 
 		if ( $markdown ) { // Parse markdown.
-			$parser = new \Parsedown;
-			$text   = $parser->text( $text );
+			// $parser = new \Parsedown;
+			// $text   = $parser->text( $text );
+			$text = Markdown($text);
 		}
 
 		$allowed = array(

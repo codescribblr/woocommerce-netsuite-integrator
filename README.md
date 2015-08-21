@@ -14,7 +14,7 @@ This plugin provides a custom integration between NetSuite and WooCommerce devel
 
 == Installation ==
 1. Download the [latest tagged version zip from the BitBucket repo](https://bitbucket.org/showcase/woocommerce-netsuite-integrator/downloads#tag-downloads).
-2. Upload Plugin via WordPress \"Add New\" plugin page.
+2. Upload Plugin via WordPress [Add New plugin page](/wp-admin/plugin-install.php?tab=upload).
 3. Activate Plugin
 
 == Frequently Asked Questions ==
