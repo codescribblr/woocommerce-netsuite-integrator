@@ -88,11 +88,6 @@ class BitBucket_Plugin_Updater {
  
     // Push in plugin version information to get the update notification
     public function set_transient( $transient ) {
-
-    	if($_GET['force-check']==1){
-    		delete_transient('update_plugins');
-    		$this->set_current_version(false);
-    	}
         
         // If we have checked the plugin data before, don't re-check
 		if ( empty( $transient->checked ) ) {
@@ -102,7 +97,7 @@ class BitBucket_Plugin_Updater {
 		$this->get_repo_release_info();
 
 		// Check the versions if we need to do an update
-		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->plugin] );
+		$do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $transient->checked[$this->slug] );
 		// $do_update = version_compare( str_ireplace('v', '', $this->newest_tag), $this->current_version );
 
 		// Update the transient to include our updated plugin data
