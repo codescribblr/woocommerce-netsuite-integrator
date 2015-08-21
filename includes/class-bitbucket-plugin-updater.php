@@ -30,7 +30,7 @@ class BitBucket_Plugin_Updater {
         $this->owner = $bitbucket_project_owner;
         $this->repo = $bitbucket_project_name;
         $this->plugin_file = $plugin_file; 											// Format: /public_html/wp-content/plugins/woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php 
-        $this->proper_folder_name = dirname($this->plugin_file); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
+        $this->proper_folder_name = dirname(plugin_basename($this->plugin_file)); 	// Format: woocommerce-netsuite-integrator/woocommerce-netsuite-integrator.php
         $this->slug = plugin_basename($this->plugin_file); 							// Format: woocommerce-netsuite-integrator || showcase-woocommerce-netsuite-integrator-f8w009e830
         $this->sslverify = true;
         $this->auth = apply_filters('bitbucket_auth_'.$this->owner.'_'.$this->repo, $bitbucket_auth, $this);
@@ -44,6 +44,8 @@ class BitBucket_Plugin_Updater {
         	'upgrade_notice' => '',
         );
         $this->init_plugin_data();
+
+        // self::log_action( 'post_install_updater_object', print_r($this, true), trailingslashit(ABSPATH) . 'actionlog.log' );
 
     }
 
@@ -166,17 +168,18 @@ class BitBucket_Plugin_Updater {
 
     	include_once ABSPATH.'/wp-admin/includes/plugin.php';
 		// Remember if our plugin was previously activated
-		$was_activated = is_plugin_active( $this->slug );
+		$was_activated = is_plugin_active( WP_PLUGIN_DIR.'/'.$this->slug );
 
 		// Since we are hosted in BitBucket, our plugin folder would have a dirname of
 		// reponame-tagname change it to our original one:
 		global $wp_filesystem;
-		$wp_filesystem->move( $result['destination'], $this->proper_folder_name );
-		$result['destination'] = $this->proper_folder_name;
+		$proper_destination = WP_PLUGIN_DIR.'/'.$this->proper_folder_name;
+		$wp_filesystem->move( $result['destination'], $proper_destination );
+		$result['destination'] = $proper_destination;
 
         // Re-activate plugin if needed
 		if ( $was_activated ) {
-		    $activate = activate_plugin( $this->slug );
+		    $activate = activate_plugin( WP_PLUGIN_DIR.'/'.$this->slug );
 		    // Output the update message
 			$fail  = __( 'The plugin has been updated, but could not be reactivated. Please reactivate it manually.', 'woocommerce-netsuite-integrator' );
 			$success = __( 'Plugin reactivated successfully.', 'woocommerce-netsuite-integrator' );
