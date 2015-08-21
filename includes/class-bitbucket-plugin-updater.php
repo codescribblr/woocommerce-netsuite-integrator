@@ -256,7 +256,7 @@ class BitBucket_Plugin_Updater {
 	 */
 	public function get_remote_readme() {
 
-		$response = wp_remote_get( 'https://api.bitbucket.org/1.0/repositories/'.$this->owner.'/'.$this->repo.'/raw/'.$this->newest_tag.'/readme.txt' );
+		$response = wp_remote_get( 'https://api.bitbucket.org/1.0/repositories/'.$this->owner.'/'.$this->repo.'/raw/'.$this->newest_tag.'/README.md' );
 		$response = wp_remote_retrieve_body( $response );
 
 		if ( ! $response ) {
