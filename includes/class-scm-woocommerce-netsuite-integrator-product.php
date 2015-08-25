@@ -15,27 +15,39 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 		
 	}
 
-	public function get_customer($customer_id = false) {
+	public function get_product_by_sku($product_sku) {
 
 		$service = $this->service;
 
 		$errors = array();
 
-		$request = new GetRequest();
-		$request->baseRef = new RecordRef();
-		$request->baseRef->internalId = $customer_id;
-		$request->baseRef->type = "customer";
-		$getResponse = $service->get($request);
+		// SEARCH BY PRODUCT SKU
+		$product_sku_search = new SearchStringField();
+		$product_sku_search->operator = "contains";
+		$product_sku_search->searchValue = $product_sku;
 
-		if (!$getResponse->readResponse->status->isSuccess) {
-		    $errors['customerSearch'][] = $getResponse->readResponse->status->statusDetail[0]->message;
+		$product_search = new ItemSearchBasic();
+		$product_search->vendorName = $product_sku_search;
+
+		$product_search_request = new SearchRequest();
+		$product_search_request->searchRecord = $product_search;
+
+		$product_search_response = $service->search($product_search_request);
+
+		if (!$product_search_response->searchResult->status->isSuccess) {
+		    $errors['product_search'][] = $product_search_response->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    $customer = false;
+		    return FALSE;
+		} elseif ($product_search_response->searchResult->totalRecords === 0) {
+			// If we can't find the item from the given SKU, then there is a continuity error between
+			// SKUs in the webStore and NetSuite. We need to log the webStore SKU so that we can update
+			// the system and not have this error in the future.
+			$errors['product_search'][] = 'No Products Found with SKU = ' . $product_sku;
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		    return FALSE;
 		} else {
-		    $customer = $getResponse->readResponse->record;
+		    return $product_search_response->searchResult->recordList->record[0];
 		}
-
-		return $customer;
 
 	}
 
