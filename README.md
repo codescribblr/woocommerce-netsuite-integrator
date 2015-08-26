@@ -10,6 +10,7 @@ License URI: http://www.gnu.org/licenses/gpl-2.0.html
 This plugin provides a custom integration between NetSuite and WooCommerce developed solely for Wolfpack Wholesale.
 
 == Description ==
+## WooCommerce NetSuite Integrator -- by Showcase Marketing (codescribblr) ##
 This plugin provides a custom integration between NetSuite and WooCommerce developed solely for Wolfpack Wholesale. It includes customer, product, and quote integration. It also uses BitBucket to autoupdate the plugin from a private repository.
 
 ### Customer Integration ###
