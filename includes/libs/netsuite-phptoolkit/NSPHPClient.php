@@ -419,7 +419,7 @@ class NSPHPClient
     private function logSoapCall($operation)
     {
         if ($this->config['logging'] && file_exists($this->config['log_path'])) {
-            $fileName = "fungku-netsuite-php-" . date("Ymd.His") . "-" . $operation;
+            $fileName = "netsuite-php-" . date("Ymd.His") . "-" . $operation;
             $logFile = $this->config['log_path'] ."/". $fileName;
 
             // REQUEST
