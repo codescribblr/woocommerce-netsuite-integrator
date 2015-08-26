@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3
-Stable tag: 1.1.5
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,7 @@ While the plugin allows for any account to be connected, the functionality used 
 == Changelog ==
 
 = 1.2.1 =
+* 2ce8960 updated readme.
 
 = 1.2.0 =
 * 3ab430a updated version to 1.2.0
