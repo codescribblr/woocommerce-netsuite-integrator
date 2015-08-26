@@ -17,7 +17,7 @@ class SCM_WC_Netsuite_Integrator_Service {
 		$this->includes();
 		$upload_dir =  wp_upload_dir();
 
-		$this->config = array(
+		$this->config = apply_filters('woocommerce_netsuite_config', array(
 			// Required
 			"endpoint"  => "2015_1", // Current version of the NetSuite API
 			"host"      => get_option('options_wni_host_endpoint'),
@@ -28,7 +28,7 @@ class SCM_WC_Netsuite_Integrator_Service {
 			// Optional
 			"logging"   => true,
 			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
-		);
+		), $this);
 
 		$this->connect_service();
 		
