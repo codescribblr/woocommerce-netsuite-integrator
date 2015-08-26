@@ -25,10 +25,15 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$request->baseRef = new RecordRef();
 		$request->baseRef->internalId = $customer_id;
 		$request->baseRef->type = "customer";
-		$getResponse = $service->get($request);
+
+		try {
+			$getResponse = $service->get($request);
+		} catch (Exception $e) {
+			$errors['customer_search'][] = $e->getMessage();
+		}
 
 		if (!$getResponse->readResponse->status->isSuccess) {
-		    $errors['customerSearch'][] = $getResponse->readResponse->status->statusDetail[0]->message;
+		    $errors['customer_search'][] = $getResponse->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
 		    $customer = false;
 		} else {
@@ -72,15 +77,19 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customerSearchRequest = new SearchRequest();
 		$customerSearchRequest->searchRecord = $customerSearch;
 
-		$customerSearchResponse = $service->search($customerSearchRequest);
+		try {
+			$customerSearchResponse = $service->search($customerSearchRequest);
+		} catch (Exception $e) {
+			$errors['customer_search'][] = $e->getMessage();
+		}
 
 		// print_r($customerSearchResponse);
 
 		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $errors['customerSearch'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
+		    $errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
 		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
-			$errors['customerSearch'][] = 'No Modified Customers Found';
+			$errors['customer_search'][] = 'No Modified Customers Found';
 			$search_results = false;
 		} else {
 		    $search_results = $customerSearchResponse->searchResult->recordList->record;
@@ -102,17 +111,21 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customerSearchRequest = new SearchRequest();
 		$customerSearchRequest->searchRecord = $customerSearch;
 
-		$customerSearchResponse = $service->search($customerSearchRequest);
+		try {
+			$customerSearchResponse = $service->search($customerSearchRequest);
+		} catch (Exception $e) {
+			$errors['customer_search'][] = $e->getMessage();
+		}
 
 		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $errors['customerSearch'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
+		    $errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
 		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
-			$errors['customerSearch'][] = 'No Modified Customers Found';
+			$errors['customer_search'][] = 'No Modified Customers Found';
 			$search_results = false;
 		} else {
 		    $search_results = $customerSearchResponse->searchResult->searchRowList->searchRow;
-		    $errors['customerSearch'][] = 'Successful';
+		    $errors['customer_search'][] = 'Successful';
 		}
 
 		SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
@@ -229,12 +242,16 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 		$service->setPreferences(false, false, false, true);
 
-		$update_customer_response = $service->update($update_customer_request);
+		try {
+			$update_customer_response = $service->update($update_customer_request);
+		} catch (Exception $e) {
+			$errors['customer_update'][] = $e->getMessage();
+		}
 
 		// print_r($update_customer_response);
 
 		if (!$update_customer_response->writeResponse->status->isSuccess) {
-		    $errors['customerUpdate'][] = $update_customer_response->writeResponse->status->statusDetail[0]->message;
+		    $errors['customer_update'][] = $update_customer_response->writeResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors));
 		    // mail('jon@createlaunchlead.com', 'Error Updating Customer ID', "oldId=".$oldId."\nnewId=".$newId);
 	    	return $errors;
