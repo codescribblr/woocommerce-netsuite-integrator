@@ -48,17 +48,14 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 	 *	Function not working for searching multiple fields simultaneously
 	 * 	Resorting to using saved searches within NetSuite UI 
 	 */
-	public function customer_search(){
+	public function customer_search() {
 		
 		$service = $this->service;
 
 		$errors = array();
 
-		// SEARCH FOR CUSTOMER BY WEBSTORE CUSTOMER ID
-
 		$service->setSearchPreferences(false, 20);
 
-		// SEARCH BY CUSTOM FIELD (WEBSTORE CUSTOMER ID)
 		$webStoreSearchField = new SearchBooleanCustomField();
 		$webStoreSearchField->searchValue = 'true';
 		// $webStoreSearchField->internalId = '150'; // scriptId => custentity_op_modified
@@ -83,8 +80,6 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 			$errors['customer_search'][] = $e->getMessage();
 		}
 
-		// print_r($customerSearchResponse);
-
 		if (!$customerSearchResponse->searchResult->status->isSuccess) {
 		    $errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
@@ -97,6 +92,201 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 		return $search_results;
 	}
+
+	public function customer_search_by_email($email) {
+
+		$service = $this->service;
+
+		$errors = array();
+
+		$service->setSearchPreferences(true, 20);
+
+		// SEARCH BY EMAIL
+		$web_store_search_field = new SearchStringField();
+		$web_store_search_field->operator = "is";
+		$web_store_search_field->searchValue = $email;
+
+		$customer_search = new CustomerSearchBasic();
+		$customer_search->email = $web_store_search_field;
+
+		$customer_search_request = new SearchRequest();
+		$customer_search_request->searchRecord = $customer_search;
+
+		$customer_search_response = $service->search($customer_search_request);
+		SCM_WC_Netsuite_Integrator::log_action('search_response', print_r($customer_search_response, true));
+
+		if (!$customer_search_response->searchResult->status->isSuccess) {
+		    $errors['customer_search'][] = $customer_search_response->readResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		    return FALSE;
+		} elseif ($customer_search_response->searchResult->totalRecords === 0) {
+			$errors['customer_search'][] = 'No Customers Found with Web Store ID = ' . $order->customer->customerId;
+			$customer_internal_id = FALSE;
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		} elseif ($customer_search_response->searchResult->totalRecords > 1) {
+			$errors['customer_search'][] = 'Too many customers returned. Web Store ID was not found';
+			$customer_internal_id = FALSE;
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		} else {
+		    $customer_internal_id = $customer_search_response->searchResult->recordList->record[0]->internalId;
+		    SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Search Successful');
+		}
+
+		return $customer_internal_id;
+
+	}
+
+	/*
+	* This is currently just boilerplate functionality. This functionality
+	* still needs to be built and tested.
+	*
+	*/
+	public function update_customer_in_netsuite($customer) {
+
+		return FALSE;
+
+		$service = $this->service;
+		$errors = array();
+
+		$customer = new Customer();
+
+		$customer->addressbookList = new CustomerAddressbookList();
+
+		// We only need to add one of the addresses here. The default is for both addresses to be the same.
+		// The defaultXXXXX parameter defaults to true and only needs to be set if you are not setting the default.
+
+		$billing_address = new CustomerAddressbook();
+		$billing_address->defaultBilling = TRUE;
+		$billing_address->addressee = ($order->payment->holdersName) ? $order->payment->holdersName : $order->customer->fName . " " . $order->customer->lName;
+		$billing_address->addr1 = $order->customer->address->address1;
+		$billing_address->addr2 = $order->customer->address->address2;
+		$billing_address->city = $order->customer->address->city;
+		$billing_address->state = $order->customer->address->address1state;
+		$billing_address->zip = $order->customer->address->zip;
+		$billing_address->country = self::compareCountryCode($order->customer->address->country);
+
+		$shipping_address = new CustomerAddressbook();
+		$shipping_address->defaultShipping = TRUE;
+		$shipping_address->addressee = $order->customer->shipFName . " " . $order->customer->shipLName;
+		$shipping_address->addr1 = $order->customer->shipAddress->address1;
+		$shipping_address->addr2 = $order->customer->shipAddress->address2;
+		$shipping_address->city = $order->customer->shipAddress->city;
+		$shipping_address->state = $order->customer->shipAddress->address1state;
+		$shipping_address->zip = $order->customer->shipAddress->zip;
+		$shipping_address->country = self::compareCountryCode($order->customer->shipAddress->country);
+
+		$customer->addressbookList->addressbook = array($shipping_address, $billing_address);
+
+		// $web_store_id = new StringCustomFieldRef();
+		// $web_store_id->value = $order->customer->customerId;
+		// $web_store_id->internalId = 'custentity2';
+
+		// $customer->customFieldList = new CustomFieldList();
+		// $customer->customFieldList->customField = array($web_store_id);
+
+		// ADD CUSTOM FORM REFERENCE
+		$customer->customForm = new RecordRef();
+		$customer->customForm->internalId = 36;
+
+		$customer->category = new RecordRef();
+		$customer->category->internalId = 4; // Internet Category
+
+		$customer->internalId = $customerInternalId;
+
+		$updateCustomerRequest = new UpdateRequest();
+		$updateCustomerRequest->record = $customer;
+
+		$updateCustomerResponse = $service->update($updateCustomerRequest);
+
+		if (!$updateCustomerResponse->writeResponse->status->isSuccess) {
+		    $errors['customerUpdate'][] = $updateCustomerResponse->writeResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors));
+	    	return FALSE;
+		}
+		SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Update Successful');
+
+		return $customerInternalId;
+
+	}
+
+	/*
+	* This is currently just boilerplate functionality. This functionality
+	* still needs to be built and tested.
+	*
+	*/
+	public function add_customer_in_netsuite($customer) {
+
+		return FALSE;
+
+		$service = $this->service;
+		$errors = array();
+
+		// ADD CUSTOMER
+		$customer = new Customer();
+		SCM_WC_Netsuite_Integrator::log_action('started', 'Customer Object Created');
+		$customer->email = $order->customer->email;
+		$customer->companyName = $order->customer->fName . " " . $order->customer->lName; 
+		$customer->phone = $order->customer->phone;
+
+		// We only need to add one of the addresses here. The default is for both addresses to be the same.
+		// The defaultXXXXX parameter defaults to true and only needs to be set if you are not setting the default.
+
+		$billing_address = new CustomerAddressbook();
+		$billing_address->defaultBilling = TRUE;
+		$billing_address->addressee = ($order->payment->holdersName) ? $order->payment->holdersName : $order->customer->fName . " " . $order->customer->lName;
+		$billing_address->addr1 = $order->customer->address->address1;
+		$billing_address->addr2 = $order->customer->address->address2;
+		$billing_address->city = $order->customer->address->city;
+		$billing_address->state = $order->customer->address->address1state;
+		$billing_address->zip = $order->customer->address->zip;
+		$billing_address->country = self::compareCountryCode($order->customer->address->country);
+
+		$shipping_address = new CustomerAddressbook();
+		$shipping_address->defaultShipping = TRUE;
+		$shipping_address->addressee = $order->customer->shipFName . " " . $order->customer->shipLName;
+		$shipping_address->addr1 = $order->customer->shipAddress->address1;
+		$shipping_address->addr2 = $order->customer->shipAddress->address2;
+		$shipping_address->city = $order->customer->shipAddress->city;
+		$shipping_address->state = $order->customer->shipAddress->address1state;
+		$shipping_address->zip = $order->customer->shipAddress->zip;
+		$shipping_address->country = self::compareCountryCode($order->customer->shipAddress->country);
+
+		$customer->addressbookList->addressbook = array($shipping_address, $billing_address);
+		$customer->subsidiary = new RecordRef();
+		$customer->subsidiary->internalId = 3; //This is the Kentwool Performance division (Id preset in NetSuite)
+
+		$webStoreId = new StringCustomFieldRef();
+		$webStoreId->value = $order->customer->customerId;
+		$webStoreId->internalId = 'custentity2';
+
+		$customer->customFieldList = new CustomFieldList();
+		$customer->customFieldList->customField = array($webStoreId);
+
+		$customer->customForm = new RecordRef();
+		$customer->customForm->internalId = 36;
+
+		$customer->category = new RecordRef();
+		$customer->category->internalId = 4; // Internet Category
+
+		$addCustomerRequest = new AddRequest();
+		$addCustomerRequest->record = $customer;
+
+		$addCustomerResponse = $service->add($addCustomerRequest);
+
+		if (!$addCustomerResponse->writeResponse->status->isSuccess) {
+			$errors['customerAdd'][] = $addCustomerResponse->writeResponse->status->statusDetail[0]->message;
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+	    	return FALSE;
+		} else {
+		    $customerInternalId = $addCustomerResponse->writeResponse->baseRef->internalId;
+		    SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Add Successful');
+		}
+
+		return $customerInternalId;
+
+	}
+
+
 
 	public function saved_modified_flag_customer_search() {
 
@@ -129,7 +319,6 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		}
 
 		SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		// print_r($search_results);
 		return $search_results;
 
 	}
@@ -383,6 +572,10 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 			}
 		}
 
+	}
+
+	public static function compareCountryCode($code){
+		return parent::compareCountryCode($code);
 	}
 }
 
