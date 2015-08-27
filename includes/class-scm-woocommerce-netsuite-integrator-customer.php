@@ -263,7 +263,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 	}
 
-	public function upsert_customer($username, $email, $password='', $first_name = '', $last_name = '', $billing = array(), $shipping = array()) {
+	public function upsert_customer($username, $email, $password='', $first_name = '', $last_name = '', $billing = array(), $shipping = array(), $netsuite_id='') {
 		
 		$nickname = !empty($first_name) ? $first_name : $username;
 		$user_id = username_exists( $username );
@@ -291,6 +291,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 				update_user_meta($user_id, 'nickname', ($user->nickname) ? $user->nickname : $billing['billing_name']);
 				update_user_meta($user_id, 'last_synced_with_netsuite_date', time());
+				update_user_meta($user_id, 'netsuite_id', $netsuite_id);
 
 				// Set the role
 				$role = 'contributor';
@@ -362,6 +363,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 			update_user_meta($user_id, 'shipping_country', ($user->shipping_country) ? $user->shipping_country : $shipping['shipping_country']);
 
 			update_user_meta($user_id, 'last_synced_with_netsuite_date', time());
+			update_user_meta($user_id, 'netsuite_id', $netsuite_id);
 
 			SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.'('.$nickname.') Updated Successfully');
 
@@ -375,7 +377,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customers = $this->get_and_organize_modified_customers();
 		if(!empty($customers)){
 			foreach($customers as $customer){
-				if($this->upsert_customer($customer['username'], $customer['email'], $customer['password'], $customer['companyName'], '', $customer['billAddress'], $customer['shipAddress'])){
+				if($this->upsert_customer($customer['username'], $customer['email'], $customer['password'], $customer['companyName'], '', $customer['billAddress'], $customer['shipAddress'], $customer['internalId'])){
 					$this->update_modified_flag($customer['internalId']);
 				}	
 			}

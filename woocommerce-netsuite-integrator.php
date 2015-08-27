@@ -226,6 +226,7 @@ class SCM_WC_Netsuite_Integrator {
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-service.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-customer.php';
 		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-product.php';
+		include_once INCLUDES_DIR . DS . 'class-scm-woocommerce-netsuite-integrator-quote.php';
 		include_once INCLUDES_DIR . DS . 'class-bitbucket-plugin-updater.php';
 		include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-automattic-readme.php';
 		// include_once LIB_DIR . DS . 'automattic-readme' . DS . 'class-parsedown.php';

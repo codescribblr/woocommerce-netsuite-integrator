@@ -29,6 +29,25 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 
 	public function get_product_by_sku($product_sku) {
 
+		if(empty($product_sku)){
+			$errors['product_search'][] = 'Product SKU cannot be empty.';
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			return FALSE;
+		}
+
+		$this->config = apply_filters('woocommerce_netsuite_config', array(
+			// Required
+			"endpoint"  => "2015_1", // Current version of the NetSuite API
+			"host"      => get_option('options_wni_host_endpoint'),
+			"email"     => get_option('options_wni_email'),
+			"password"  => get_option('options_wni_password'),
+			"role"      => "3", // Must be an admin to have rights
+			"account"   => get_option('options_wni_account_number'),
+			// Optional
+			"logging"   => true,
+			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
+		), $this);
+
 		//SKU is stored as Name in NetSuite
 
 		$service = $this->service;
@@ -52,6 +71,10 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 			$errors['product_search'][] = $e->getMessage();
 		}
 
+		$req = new LogoutRequest();
+		$req->passport = $service->passport;
+		$service->logout($req);
+
 		if (!$product_search_response->searchResult->status->isSuccess || !isset($product_search_response)) {
 		    $errors['product_search'][] = $product_search_response->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
@@ -62,7 +85,7 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 			// the system and not have this error in the future.
 			$errors['product_search'][] = 'No Products Found with SKU = ' . $product_sku;
 			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    return FALSE;
+		    return 0;
 		} else {
 		    return $product_search_response->searchResult->recordList->record[0];
 		}
