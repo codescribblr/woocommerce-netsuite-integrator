@@ -93,32 +93,36 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 	}
 
 	public function validate_sku_on_save($post_ID, $post, $update) {
-		//Don't run the SKU validator for BULK products.
-		if(!has_category('bulk', $_POST['product_id'])){
-			if(isset($_POST['product-type']) && $_POST['product-type']=='variable'){
-				//Don't run the SKU validator for BULK products.
-				if(!has_category('bulk', $_POST['product_id'])){
-					$variation_keys = array_keys($_POST['variable_post_id']);
-					foreach($variation_keys as $v){
-						if(empty($_POST['variable_sku'][$v])){
-							$this->add_netsuite_sku_validation_error_notice($_POST['variable_post_id'][$v],'', true);
-						} else {
-							if(!$this->get_product_by_sku($_POST['variable_sku'][$v])){
-								$this->add_netsuite_sku_validation_error_notice($_POST['variable_post_id'][$v], $_POST['variable_sku'][$v], true);
+		//Don't run the validator if this isn't a product post.
+		if(isset($_POST['product_id'])){
+			//Don't run the SKU validator for BULK products.
+			if(!has_category('bulk', $_POST['product_id'])){
+				if(isset($_POST['product-type']) && $_POST['product-type']=='variable'){
+					//Don't run the SKU validator for BULK products.
+					if(!has_category('bulk', $_POST['product_id'])){
+						$variation_keys = array_keys($_POST['variable_post_id']);
+						foreach($variation_keys as $v){
+							if(empty($_POST['variable_sku'][$v])){
+								$this->add_netsuite_sku_validation_error_notice($_POST['variable_post_id'][$v],'', true);
+							} else {
+								if(!$this->get_product_by_sku($_POST['variable_sku'][$v])){
+									$this->add_netsuite_sku_validation_error_notice($_POST['variable_post_id'][$v], $_POST['variable_sku'][$v], true);
+								}
 							}
 						}
 					}
-				}
-			} elseif(isset($_POST['product-type']) && isset($_POST['_sku'])) {
-				if(empty($_POST['_sku'])){
-					$this->add_netsuite_sku_validation_error_notice($_POST['ID']);
-				} else {
-					if(!$this->get_product_by_sku($_POST['_sku'])){
-						$this->add_netsuite_sku_validation_error_notice($_POST['ID'], $_POST['_sku']);
+				} elseif(isset($_POST['product-type']) && isset($_POST['_sku'])) {
+					if(empty($_POST['_sku'])){
+						$this->add_netsuite_sku_validation_error_notice($_POST['ID']);
+					} else {
+						if(!$this->get_product_by_sku($_POST['_sku'])){
+							$this->add_netsuite_sku_validation_error_notice($_POST['ID'], $_POST['_sku']);
+						}
 					}
 				}
 			}
 		}
+		
 	}
 
 	public function validate_sku_on_save_variation($variation_id) {

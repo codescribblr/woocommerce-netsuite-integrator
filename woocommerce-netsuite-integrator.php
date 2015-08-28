@@ -97,6 +97,9 @@ class SCM_WC_Netsuite_Integrator {
 			}
 		}
 
+		// Move this to theme functions.php
+		$this->modify_no_shipping_method_html();
+
 	}
 
 	/*
@@ -357,6 +360,24 @@ class SCM_WC_Netsuite_Integrator {
 						'maxlength' => '',
 						'readonly' => 0,
 						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55cffbeab8325',
+						'label' => 'Support Email Address',
+						'name' => 'wni_support_email',
+						'type' => 'email',
+						'instructions' => 'This address is used for admin purposes, like NetSuite errors and notices.',
+						'required' => 1,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
 					),
 					array (
 						'key' => 'field_55cffbeab83241292',
@@ -845,6 +866,17 @@ class SCM_WC_Netsuite_Integrator {
 	 */
 	public function netsuite_configuration_missing_notice() {
 		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce NetSuite Integrator requires that you provide all the required %s', 'woocommerce-netsuite-integrator' ), '<a href="/wp-admin/admin.php?page=acf-options-netsuite-settings">' . __( 'NetSuite configuration options!') . '</a>' ) . '</p></div>';
+	}
+
+	// Move this function to theme functions.php
+	public function modify_no_shipping_method_html() {
+		add_filter( 'woocommerce_cart_no_shipping_available_html', array($this, 'no_shipping_html') );
+		add_filter( 'woocommerce_no_shipping_available_html', array($this, 'no_shipping_html') );
+	}
+
+	// Move this function to theme functions.php
+	public function no_shipping_html() {
+		return '<p>Shipping is not calculated for quotes.</p>';
 	}
 
 }

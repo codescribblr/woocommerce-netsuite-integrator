@@ -24,12 +24,13 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	}
 
 	public function setup_actions() {
-		add_action( 'woocommerce_payment_complete', 'validate_order_skus_with_netsuite', 20, 1 );
+		add_action( 'woocommerce_payment_complete', array($this, 'schedule_create_netsuite_estimate'), 20, 1 );
+		add_action( 'wni_create_netsuite_estimate', array($this, 'create_netsuite_estimate'), 10, 2);
 	}
 
 	public function variable_product_sku_generator($sku, $product){
 		if($product->parent->id==451) {
-			// print_r($product); exit();
+
 		}
 		return $sku;
 	}
@@ -60,10 +61,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 
 	public function get_order_details( $order_id ) {
 
-		// $WC_NIC = new SCM_WC_Netsuite_Integrator_Customer();
-
 		$order = new WC_Order($order_id);
-		// $order->netsuite_customer = $WC_NIC->get_customer('23481');
 		$order->customer = $order->get_user();
 		$order->customer->netsuite_id = get_user_meta($order->customer->ID, 'netsuite_id', true);
 		$order->order_items = $order->get_items();
@@ -112,7 +110,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'process_netsuite_estimate has been instantiated');
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		// AT THE OUTSET LETS SEARCH FOR THE WEB STORE ORDER ID IN NETSUITES SALES ORDERS 
 		// TO FIND OUT IF THIS ORDER IS ALREADY IN THEIR SYSTEM
@@ -156,13 +154,13 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		try {
 			$quoteSearchResponse = $service->search($quoteSearchRequest);
 		} catch (Exception $e) {
-			$errors['quote_search'][] = $e->getMessage();
+			$this->errors['quote_search'][] = $e->getMessage();
 		}
 		
 
 		if (!$quoteSearchResponse->searchResult->status->isSuccess) {
-			$errors['quote_search'][] = $quoteSearchResponse;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			$this->errors['quote_search'][] = $quoteSearchResponse;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		    return FALSE;
 		} elseif ($quoteSearchResponse->searchResult->totalRecords === 0) {
 			SCM_WC_Netsuite_Integrator::log_action('sucess', 'Quote #'.$quote_id.' not in NetSuite. We can begin.');
@@ -172,7 +170,18 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		}
 	}
 
-	public function test_process_netsuite($order){
+	/*
+	* In order for this function to work properly 
+	* $order must be an object instance of a firesale order
+	* This returns the newly created Sales Order ID so that
+	* we can pull updates from NetSuite on this order ID
+	*/
+	public function create_netsuite_estimate($order_id, $resend = FALSE) {
+		
+		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'create_netsuite_estimate has been called');
+		do_action( 'wni_before_create_netsuite_estimate', $order_id, $this );
+
+		$order = $this->get_order_details($order_id);
 
 		// Don't process the order if it's already in NetSuite
 		if(!empty($order->netsuite_id) && is_numeric($order->netsuite_id)){
@@ -181,7 +190,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		// Check to see if the customer is already in NetSuite. If so, let's update their user with the NetSuite Id.
 		if(!$order->customer->data->netsuite_id){
@@ -194,16 +203,28 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			}
 		}
 
-		if(!$order->customer->data->netsuite_id){
+		// If we have a customer in NetSuite already, update their info to the current info,
+		// and move on to the next step.
+		if ($order->customer->data->netsuite_id) {
+
+			// UPDATE CUSTOMER
+			
+			// If there's no errors, go ahead and move on to the next step.
+
+		// If there is no customer in NetSuite, then we need to add them
+		// before we can move on to creating an estimate.
+		} else {
+
 			// Customer doesn't exist in NetSuite. We need to create the logic here to create them.
 
+			// ADD CUSTOMER
 
 		}
 
 		// If there's no errors up to this point, then we can go ahead and create the estimate
-		// using our newly acquired $customerInternalId
+		// using our newly acquired $netsuite_id
 
-		// Before we can actually create a sales order, we need to know the internalId for each
+		// Before we can actually create an estimate, we need to know the internalId for each
 		// of the products the customer purchased. We'll have to run a search on the SKU to find
 		// out the $productInternalId for each of the products. We'll store them in an array and
 		// create a new estimateItem for each of the items in the $estimateItems array.
@@ -222,33 +243,42 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			// SEARCH BY PRODUCT SKU
 			$product_id = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
 			$WC_Product = new WC_Product($product_id);
-			$webStoreSKU = $WC_Product->get_sku();
+			$webStoreSKU = apply_filters('wni_before_validation_product_sku', $WC_Product->get_sku(), $WC_Product, $webOrderItem);
 
 			$WC_NIP = new SCM_WC_Netsuite_Integrator_Product();
 			$productSearchResponse = $WC_NIP->get_product_by_sku($webStoreSKU);
 			SCM_WC_Netsuite_Integrator::log_action('product_search_response', print_r($productSearchResponse, true));
 
 			if ($productSearchResponse === 0) {
-			    $errors['productSearch'][] = 'No Products Found with SKU = ' . $webStoreSKU;
-			    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			    $this->errors['productSearch'][] = 'No Products Found with SKU = ' . $webStoreSKU;
+			    $missingItemDetails[$itemKey]['sku'] = $webStoreSKU;
+				$missingItemDetails[$itemKey]['name'] = $webOrderItem['name'];
+				$missingItemDetails[$itemKey]['amount'] = (float)$webOrderItem['line_subtotal'] / (int)$webOrderItem['qty'];
+			    $missingItemDetails[$itemKey]['quantity'] = $webOrderItem['qty'];
+			    $missingItemDetails[$itemKey]['webstoreProductId'] = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
+			    $missingItemDetails[$itemKey]['size'] = isset($webOrderItem['pa_size']) ? $webOrderItem['pa_size'] : '';
+			    $missingItemDetails[$itemKey]['nicotene-strength'] = isset($webOrderItem['pa_nicotine-strength']) ? $webOrderItem['pa_nicotine-strength'] : '';
+			    $missingItemDetails[$itemKey]['blend-pg/vg'] = isset($webOrderItem['pa_blend']) ? $webOrderItem['pa_blend'] : '';
+			    $missingItemDetails[$itemKey]['flavor'] = isset($webOrderItem['pa_flavor']) ? $webOrderItem['pa_flavor'] : '';
+			    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
+			} elseif($productSearchResponse === FALSE) {
+				$missingItemDetails[$itemKey]['sku'] = $webStoreSKU;
+				$missingItemDetails[$itemKey]['name'] = $webOrderItem['name'];
+				$missingItemDetails[$itemKey]['amount'] = (float)$webOrderItem['line_subtotal'] / (int)$webOrderItem['qty'];
+			    $missingItemDetails[$itemKey]['quantity'] = $webOrderItem['qty'];
+			    $missingItemDetails[$itemKey]['webstoreProductId'] = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
+			    $missingItemDetails[$itemKey]['size'] = isset($webOrderItem['pa_size']) ? $webOrderItem['pa_size'] : '';
+			    $missingItemDetails[$itemKey]['nicotene-strength'] = isset($webOrderItem['pa_nicotine-strength']) ? $webOrderItem['pa_nicotine-strength'] : '';
+			    $missingItemDetails[$itemKey]['blend-pg/vg'] = isset($webOrderItem['pa_blend']) ? $webOrderItem['pa_blend'] : '';
+			    $missingItemDetails[$itemKey]['flavor'] = isset($webOrderItem['pa_flavor']) ? $webOrderItem['pa_flavor'] : '';
 			} else {
-				if($productSearchResponse===FALSE) {
-					$missingItemDetails[$itemKey]['sku'] = $webStoreSKU;
-					$missingItemDetails[$itemKey]['name'] = $webOrderItem['name'];
-					$missingItemDetails[$itemKey]['amount'] = (float)$webOrderItem['line_subtotal'] / (int)$webOrderItem['qty'];
-				    $missingItemDetails[$itemKey]['quantity'] = $webOrderItem['qty'];
-				    $missingItemDetails[$itemKey]['webstoreProductId'] = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
-				    $missingItemDetails[$itemKey]['description'] = "";
-				} else {
-					$estimateItemDetails[$itemKey]['id'] = $productSearchResponse->internalId;
-					$estimateItemDetails[$itemKey]['amount'] = (float)$webOrderItem['line_subtotal'] / (int)$webOrderItem['qty'];
-				    $estimateItemDetails[$itemKey]['quantity'] = $webOrderItem['qty'];
-				    $estimateItemDetails[$itemKey]['webstoreProductId'] = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
-				    $estimateItemDetails[$itemKey]['description'] = "";
-				}
+				$estimateItemDetails[$itemKey]['id'] = $productSearchResponse->internalId;
+				$estimateItemDetails[$itemKey]['amount'] = (float)$webOrderItem['line_subtotal'] / (int)$webOrderItem['qty'];
+			    $estimateItemDetails[$itemKey]['quantity'] = $webOrderItem['qty'];
+			    $estimateItemDetails[$itemKey]['webstoreProductId'] = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
+			    $estimateItemDetails[$itemKey]['description'] = $webOrderItem['name'];
 			}
 
-				
 		}
 
 		// ADD NEW ESTIMATE
@@ -258,12 +288,13 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$estimate->customForm = new RecordRef();
 		$estimate->customForm->internalId = 107; // Wolfpack Quote
 
+		// Attach the customer
 		$estimate->entity = new RecordRef();
 		$estimate->entity->internalId = $order->customer->data->netsuite_id;
 
 		// $estimate->isTaxable = false;
-		$estimate->itemList = new EstimateItemList();
-		//$estimate->discountRate = "0";
+		// $estimate->discountRate = "0";
+		
 		foreach($estimateItemDetails as $key => $estimateItemDetail){
 			$estimateItems[$key] = new EstimateItem();
 			$estimateItems[$key]->item = new RecordRef();
@@ -281,7 +312,10 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			$estimateItems[$key]->amount = (int)$estimateItemDetail['quantity'] * (float)$estimateItemDetail['amount'];
 		}
 
+		$estimate->itemList = new EstimateItemList();
+
 		// Re-index the array with default array_keys
+		$missingItemDetails = array_values($missingItemDetails);
 		$estimateItems = array_values($estimateItems);
 		$estimate->itemList->item = $estimateItems;
 
@@ -296,424 +330,67 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$web_quote_id->value = $order->id;
 		$web_quote_id->scriptId = 'custbody_web_quote_id'; // scriptId => custbody_web_quote_id
 
-		$estimate->customFieldList = new CustomFieldList();
-		$estimate->customFieldList->customField = array($web_quote_id);
+		$quantity_of_unknown_items = new StringCustomFieldRef;
+		$quantity_of_unknown_items->value = count($missingItemDetails);
+		$quantity_of_unknown_items->scriptId = 'custbody_op_quantity_of_unknown_items'; // scriptId => custbody_op_quantity_of_unknown_items
 
-		// Get the orderDateTimestamp
-		$orderTime = strtotime($order->order_date);
-		$estimate->tranDate = date("Y-m-d\TH:i:sP", $orderTime);
+		$unknown_items_on_order = new StringCustomFieldRef;
+		$unknown_items_on_order->value = json_encode($missingItemDetails);
+		$unknown_items_on_order->scriptId = 'custbody_op_unknown_item_on_order'; // scriptId => custbody_op_unknown_item_on_order
+
+		$estimate->customFieldList = new CustomFieldList();
+		$estimate->customFieldList->customField[] = $web_quote_id;
+		$estimate->customFieldList->customField[] = $quantity_of_unknown_items;
+		$estimate->customFieldList->customField[] = $unknown_items_on_order;
+
+		// Get the order_date_timestamp
+		$order_time = strtotime($order->order_date);
+		$estimate->tranDate = date("Y-m-d\TH:i:sP", $order_time);
 
 		if($order->customer_message){
 			$estimate->memo = $order->customer_message;
 		}
 
 		$estimateRequest = new AddRequest();
-		$estimateRequest->record = $estimate;
+		$estimateRequest->record = apply_filters('wni_add_estimate_request_record', $estimate, $order, $this);
 
-		$addEstimateResponse = $service->add($estimateRequest);
+		do_action('wni_before_add_estimate', $estimateRequest, $order, $this);
+		try {
+			$addEstimateResponse = $service->add($estimateRequest);
+		} catch (Exception $e) {
+			$this->errors['estimate_add'][] = $e->getMessage();
+		}
+		do_action('wni_after_add_estimate', $addEstimateResponse, $order, $this);
 
 		if (!$addEstimateResponse->writeResponse->status->isSuccess) {
-		    $errors['estimate_add'][] = $addEstimateResponse->writeResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		    $this->errors['estimate_add'][] = $addEstimateResponse->writeResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
+		    do_action('wni_create_netsuite_estimate_failed', $addEstimateResponse, $this);
+		    if($resend){
+		    	$message = sprintf( __( 'There is some kind of issue happening with the Woocommerce NetSuite Integrator. Multiple attempts have failed to send Order #%d through to NetSuite. We will continue to attempt to send every hour, but it probably needs to be handled manually.', 'woocommerce-netsuite-integrator'), $order_id );
+		    	$headers = 'From: '.get_option('blogname').' <'.get_option('admin_email').'>' . "\r\n";
+		    	wp_mail(get_option('wni_support_email'), get_option('blogname') . ' ' . __('NetSuite Integration Error', 'woocommerce-netsuite-integrator'), $message, $headers);
+		    }
+		    $this->schedule_create_netsuite_estimate($order->id, time() + (60 * 60), true);
 		    return FALSE;
 		} else {
+			do_action('wni_create_netsuite_estimate_succeeded', $addEstimateResponse, $this);
 		    $newEstimate = $addEstimateResponse->writeResponse->baseRef->internalId;
+		    $newEstimate = apply_filters('wni_new_estimate_id', $newEstimate, $estimateRequest, $addEstimateResponse, $this);
 		    update_post_meta($order->id, 'netsuite_id', $newEstimate);
 		}
+
+		do_action('wni_after_create_netsuite_estimate', $order, $newEstimate, $estimateRequest, $addEstimateResponse, $this);
+
 		return $newEstimate;
-		
 	}
 
-	/*
-	* In order for this function to work properly 
-	* $order must be an object instance of a firesale order
-	* This returns the newly created Sales Order ID so that
-	* we can pull updates from NetSuite on this order ID
-	*/
-	public function process_netsuite_estimate($order, $resend = FALSE){
+	public function schedule_create_netsuite_estimate($order_id, $time_before_sheduling = FALSE, $resend = FALSE) {
 		
-		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'process_netsuite_estimate has been instantiated');
-		$service = $this->service;
+		$time_before_sheduling = !$time_before_sheduling ? time() : $time_before_sheduling;
 
-		$errors = array();
+		wp_schedule_single_event( $time_before_sheduling, 'wni_create_netsuite_estimate', array( $order_id, $resend ) );
 
-		// AT THE OUTSET LETS SEARCH FOR THE WEB STORE ORDER ID IN NETSUITES SALES ORDERS 
-		// TO FIND OUT IF THIS ORDER IS ALREADY IN THEIR SYSTEM
-		// SEARCH BY CUSTOM FIELD (WEBSTORE CUSTOMER ID)
-		if($order->orderNumber==0 || empty($order->orderNumber) || !isset($order->orderNumber)){
-			SCM_WC_Netsuite_Integrator::log_action('error', 'There is a problem with the order number. It may not exist or is == 0. Order#: '.print_r($order->orderNumber, TRUE));
-			return FALSE;
-		}
-		$webStoreOrderNumSearchField = new SearchTextNumberField();
-		$webStoreOrderNumSearchField->operator = "equalTo";
-		$webStoreOrderNumSearchField->searchValue = $order->orderNumber;
-
-		$orderSearch = new TransactionSearchBasic();
-		$orderSearch->otherRefNum = $webStoreOrderNumSearchField;
-
-		$orderSearchRequest = new SearchRequest();
-		$orderSearchRequest->searchRecord = $orderSearch;
-
-		$orderSearchResponse = $service->search($orderSearchRequest);
-
-		if (!$orderSearchResponse->searchResult->status->isSuccess) {
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    return FALSE;
-		} elseif ($orderSearchResponse->searchResult->totalRecords === 0) {
-			SCM_WC_Netsuite_Integrator::log_action('sucess', 'Order #'.$order->orderNumber.' not in NetSuite. We can begin.');
-		} else {
-		    SCM_WC_Netsuite_Integrator::log_action('error', 'Order #'.$order->orderNumber.' already in NetSuite');
-		    return FALSE;
-		}
-
-		// SEARCH FOR CUSTOMER BY WEBSTORE CUSTOMER ID
-
-		$service->setSearchPreferences(false, 20);
-
-		// SEARCH BY CUSTOM FIELD (WEBSTORE CUSTOMER ID)
-		$webStoreSearchField = new SearchStringCustomField();
-		$webStoreSearchField->operator = "is";
-		$webStoreSearchField->searchValue = $order->customer->customerId;
-		$webStoreSearchField->internalId = 'custentity2';
-
-		$customerSearch = new CustomerSearchBasic();
-		$customerSearch->customFieldList->customField = $webStoreSearchField;
-
-		$customerSearchRequest = new SearchRequest();
-		$customerSearchRequest->searchRecord = $customerSearch;
-
-		$customerSearchResponse = $service->search($customerSearchRequest);
-
-		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $errors['customerSearch'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    return FALSE;
-		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
-			$errors['customerSearch'][] = 'No Customers Found with Web Store ID = ' . $order->customer->customerId;
-			$customerInternalId = FALSE;
-			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		} elseif ($customerSearchResponse->searchResult->totalRecords > 1) {
-			$errors['customerSearch'][] = 'Too many customers returned. Web Store ID was not found';
-			$customerInternalId = FALSE;
-			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		} else {
-		    $customerInternalId = $customerSearchResponse->searchResult->recordList->record[0]->internalId;
-		    SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Search Successful');
-		}
-
-		// If we have a customer in NetSuite already, update their info to the current info,
-		// and move on to the next step.
-		if ($customerInternalId) {
-			// UPDATE CUSTOMER
-
-			// Remove any previous $customer objects that may still be hanging around
-			unset($customer);
-
-			$customer = new Customer();
-
-			$customer->addressbookList = new CustomerAddressbookList();
-
-			// We only need to add one of the addresses here. The default is for both addresses to be the same.
-			// The defaultXXXXX parameter defaults to true and only needs to be set if you are not setting the default.
-
-			$billing_address = new CustomerAddressbook();
-			$billing_address->defaultBilling = TRUE;
-			$billing_address->addressee = ($order->payment->holdersName) ? $order->payment->holdersName : $order->customer->fName . " " . $order->customer->lName;
-			$billing_address->addr1 = $order->customer->address->address1;
-			$billing_address->addr2 = $order->customer->address->address2;
-			$billing_address->city = $order->customer->address->city;
-			$billing_address->state = $order->customer->address->address1state;
-			$billing_address->zip = $order->customer->address->zip;
-			$billing_address->country = self::compareCountryCode($order->customer->address->country);
-
-			$shipping_address = new CustomerAddressbook();
-			$shipping_address->defaultShipping = TRUE;
-			$shipping_address->addressee = $order->customer->shipFName . " " . $order->customer->shipLName;
-			$shipping_address->addr1 = $order->customer->shipAddress->address1;
-			$shipping_address->addr2 = $order->customer->shipAddress->address2;
-			$shipping_address->city = $order->customer->shipAddress->city;
-			$shipping_address->state = $order->customer->shipAddress->address1state;
-			$shipping_address->zip = $order->customer->shipAddress->zip;
-			$shipping_address->country = self::compareCountryCode($order->customer->shipAddress->country);
-
-			$customer->addressbookList->addressbook = array($shipping_address, $billing_address);
-
-			// $web_store_id = new StringCustomFieldRef();
-			// $web_store_id->value = $order->customer->customerId;
-			// $web_store_id->internalId = 'custentity2';
-
-			// $customer->customFieldList = new CustomFieldList();
-			// $customer->customFieldList->customField = array($web_store_id);
-
-			// ADD CUSTOM FORM REFERENCE
-			$customer->customForm = new RecordRef();
-			$customer->customForm->internalId = 36;
-
-			$customer->category = new RecordRef();
-			$customer->category->internalId = 4; // Internet Category
-
-			$customer->internalId = $customerInternalId;
-
-			$updateCustomerRequest = new UpdateRequest();
-			$updateCustomerRequest->record = $customer;
-
-			$updateCustomerResponse = $service->update($updateCustomerRequest);
-
-			if (!$updateCustomerResponse->writeResponse->status->isSuccess) {
-			    $errors['customerUpdate'][] = $updateCustomerResponse->writeResponse->status->statusDetail[0]->message;
-			    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors));
-		    	return FALSE;
-			}
-			SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Update Successful');
-
-			// If there's no errors, go ahead and move on to the next step.
-
-		// If there is no customer in NetSuite, then we need to add them
-		// before we can move on to creating a sales order.
-		} else {
-			SCM_WC_Netsuite_Integrator::log_action('started', 'Customer Add Started');
-			// Remove any previous $customer objects that may still be hanging around
-			unset($customer);
-
-			// ADD CUSTOMER
-
-			$customer = new Customer();
-			SCM_WC_Netsuite_Integrator::log_action('started', 'Customer Object Created');
-			$customer->email = $order->customer->email;
-			$customer->companyName = $order->customer->fName . " " . $order->customer->lName; 
-			$customer->phone = $order->customer->phone;
-
-			// We only need to add one of the addresses here. The default is for both addresses to be the same.
-			// The defaultXXXXX parameter defaults to true and only needs to be set if you are not setting the default.
-
-			$billing_address = new CustomerAddressbook();
-			$billing_address->defaultBilling = TRUE;
-			$billing_address->addressee = ($order->payment->holdersName) ? $order->payment->holdersName : $order->customer->fName . " " . $order->customer->lName;
-			$billing_address->addr1 = $order->customer->address->address1;
-			$billing_address->addr2 = $order->customer->address->address2;
-			$billing_address->city = $order->customer->address->city;
-			$billing_address->state = $order->customer->address->address1state;
-			$billing_address->zip = $order->customer->address->zip;
-			$billing_address->country = self::compareCountryCode($order->customer->address->country);
-
-			$shipping_address = new CustomerAddressbook();
-			$shipping_address->defaultShipping = TRUE;
-			$shipping_address->addressee = $order->customer->shipFName . " " . $order->customer->shipLName;
-			$shipping_address->addr1 = $order->customer->shipAddress->address1;
-			$shipping_address->addr2 = $order->customer->shipAddress->address2;
-			$shipping_address->city = $order->customer->shipAddress->city;
-			$shipping_address->state = $order->customer->shipAddress->address1state;
-			$shipping_address->zip = $order->customer->shipAddress->zip;
-			$shipping_address->country = self::compareCountryCode($order->customer->shipAddress->country);
-
-			$customer->addressbookList->addressbook = array($shipping_address, $billing_address);
-			$customer->subsidiary = new RecordRef();
-			$customer->subsidiary->internalId = 3; //This is the Kentwool Performance division (Id preset in NetSuite)
-
-			$webStoreId = new StringCustomFieldRef();
-			$webStoreId->value = $order->customer->customerId;
-			$webStoreId->internalId = 'custentity2';
-
-			$customer->customFieldList = new CustomFieldList();
-			$customer->customFieldList->customField = array($webStoreId);
-
-			$customer->customForm = new RecordRef();
-			$customer->customForm->internalId = 36;
-
-			$customer->category = new RecordRef();
-			$customer->category->internalId = 4; // Internet Category
-
-			$addCustomerRequest = new AddRequest();
-			$addCustomerRequest->record = $customer;
-
-			$addCustomerResponse = $service->add($addCustomerRequest);
-
-			if (!$addCustomerResponse->writeResponse->status->isSuccess) {
-				$errors['customerAdd'][] = $addCustomerResponse->writeResponse->status->statusDetail[0]->message;
-				SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    	return FALSE;
-			} else {
-			    $customerInternalId = $addCustomerResponse->writeResponse->baseRef->internalId;
-			    SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Add Successful');
-			}
-
-		}
-
-		// If there's no errors up to this point, then we can go ahead and create the sales order
-		// using our newly acquired $customerInternalId
-
-		// Before we can actually create a sales order, we need to know the internalId for each
-		// of the products the customer purchased. We'll have to run a search on the SKU to find
-		// out the $productInternalId for each of the products. We'll store them in an array and
-		// create a new estimateItem for each of the items in the $estimateItems array.
-
-		$estimateItems = array();
-		$estimateItemDetails = array();
-
-		// We found out that Gift cards are not discounted items. So now we have to loop through the items 2x.
-		// The first time to make sure there are no gift cards. If there are, then we'll have to subtract that
-		// price from the subtotal and total to make sure that the discount is correct for the correct items.
-		// Now that we have the correct discount percentage, we'll need to loop through a second time for us to 
-		// calculate the individual price of each item. We'll need to check if it's a gift card and be sure not to 
-		// set a discount on that item.
-		$giftCardPurchased = FALSE;
-		$giftCardAmount = 0;
-		foreach($order->cart->items as $itemKey1 => $webOrderItem1){
-			if($webOrderItem1->productId=="31"){
-				$giftCardPurchased = TRUE;
-				$giftCardAmount += ((float)$webOrderItem1->unitPrice->amount * $webOrderItem1->quantity);
-			}
-		}
-
-		foreach($order->cart->items as $itemKey => $webOrderItem){
-
-			// SEARCH BY PRODUCT SKU
-			$webStoreSKU = $webOrderItem->productNumber;
-
-			$webStoreSKUSearch = new SearchStringField();
-			$webStoreSKUSearch->operator = "contains";
-			$webStoreSKUSearch->searchValue = $webStoreSKU;
-
-			$productSearch = new ItemSearchBasic();
-			$productSearch->vendorName = $webStoreSKUSearch;
-
-			$productSearchRequest = new SearchRequest();
-			$productSearchRequest->searchRecord = $productSearch;
-
-			$productSearchResponse = $service->search($productSearchRequest);
-
-			if (!$productSearchResponse->searchResult->status->isSuccess) {
-			    $errors['productSearch'][] = $productSearchResponse->readResponse->status->statusDetail[0]->message;
-			    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-			    return FALSE;
-			} elseif ($productSearchResponse->searchResult->totalRecords === 0) {
-				// If we can't find the item from the given SKU, then there is a continuity error between
-				// SKUs in the webStore and NetSuite. We need to log the webStore SKU so that we can update
-				// the system and not have this error in the future. This customer's order will continue to
-				// be sent in each subsequent cron job until this SKU gets updated in the NetSuite System.
-				// If the NetSuite system's SKU is correct, the customer's order will need to be manually
-				// entered into NetSuite's UI and manually deleted from the orders queue. This queue is stored
-				// as a local file on the server and processed each time the cron job is run. The SKU will
-				// then need to be fixed and tested in the webStore before any further orders come in.
-				$errors['productSearch'][] = 'No Products Found with SKU = ' . $webStoreSKU;
-				SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-			    return FALSE;
-			} else {
-			    $estimateItemDetails[$itemKey]['id'] = $productSearchResponse->searchResult->recordList->record[0]->internalId;
-
-			    // In order to figure out the actual price of each item, we need to take the disount and divide it by the subtotal
-			    // to find out the percentage discount taken. Then we can apply that percentage discount to the item unitPrice to
-			    // find the sale price for that item.
-			    if($order->discount=="0.00" || $webOrderItem->productId=="31"){
-			    	$estimateItemDetails[$itemKey]['amount'] = $webOrderItem->unitPrice->amount;
-			    } else {
-			    	$discountPercent = round( ( (float)$order->discount / ((float)$order->subtotal - $giftCardAmount) ), 2 );
-			    	SCM_WC_Netsuite_Integrator::log_action('calculation_check', "discount = ". (float)$order->discount .", subtotal = ". (float)$order->subtotal .", discountPercent = ".$discountPercent);
-			    	$estimateItemDetails[$itemKey]['amount'] = number_format((float)$webOrderItem->unitPrice->amount-((float)$webOrderItem->unitPrice->amount * $discountPercent), 2, '.', '');
-			    }
-			    
-			    $estimateItemDetails[$itemKey]['quantity'] = $webOrderItem->quantity;
-			    $estimateItemDetails[$itemKey]['webstoreProductId'] = $webOrderItem->productId;
-			    $estimateItemDetails[$itemKey]['description'] = ($webOrderItem->giftcard_number) ? $webOrderItem->giftcard_number : "";
-			}
-		}
-
-		// ADD NEW SALES ORDER
-
-		$estimate = new Estimate();
-
-		$estimate->customForm = new RecordRef();
-		$estimate->customForm->internalId = 105;
-
-		$estimate->entity = new RecordRef();
-		$estimate->entity->internalId = $customerInternalId;
-
-		// Only Tax for orders shipped to South Carolina (SC)
-		$isTaxable = ($order->customer->shipAddress->address1state=="SC") ? TRUE : FALSE;
-
-		$estimate->isTaxable = $isTaxable;
-		$estimate->itemList = new EstimateItemList();
-		//$estimate->discountRate = "0";
-		foreach($estimateItemDetails as $key => $estimateItemDetail){
-			$estimateItems[$key] = new EstimateItem();
-			$estimateItems[$key]->item = new RecordRef();
-			$estimateItems[$key]->item->internalId = $estimateItemDetail['id'];
-			// No tax on Gift Cards
-			$estimateItems[$key]->isTaxable = ($estimateItemDetail['webstoreProductId']=="31") ? FALSE : $isTaxable;
-			$estimateItems[$key]->description = $estimateItemDetail['description'];
-			$estimateItems[$key]->quantity = $estimateItemDetail['quantity'];
-			// We do not need to worry about entering the price from NetSuite because the webStore can have
-			// custom pricing based on dealer discounts and promo codes. We'll just enter the total.
-			// $estimateItem[$key]->price = new RecordRef();
-			// $estimateItem[$key]->price->internalId = $id;
-			// We have an issue with data types here. The amount in NetSuite is the total amount of that particular item
-			// meaning quantity * price. But the fields are both strings. So we need to cast them as the appropriate types
-			// in order to keep the calculation correct.
-			$estimateItems[$key]->amount = (int)$estimateItemDetail['quantity'] * (float)$estimateItemDetail['amount'];
-		}
-		$estimate->itemList->item = $estimateItems;
-		$estimate->location = new RecordRef();
-		// NetSuite InternalId for "Finished Goods-Performance" : Pickens Location;
-		$estimate->location->internalId = 11;
-
-		// Add shipping if the customer requested expedited shipping
-		if($order->shipMethod=="International Express") {
-			$estimate->shippingCost = $order->shipping;
-			$estimate->shipMethod = new RecordRef();
-			// NetSuite InternalId for USPS Overnight
-			$estimate->shipMethod->internalId = 826;
-		} else if($order->shipMethod=="International Standard") {
-			$estimate->shippingCost = $order->shipping;
-			$estimate->shipMethod = new RecordRef();
-			// NetSuite InternalId for USPS International
-			$estimate->shipMethod->internalId = 827;
-		} else if($order->shipMethod=="Free Domestic") {
-			$estimate->shippingCost = $order->shipping;
-			$estimate->shipMethod = new RecordRef();
-			// NetSuite InternalId for USPS
-			$estimate->shipMethod->internalId = 824;
-		} else if($order->shipMethod=="Priority Overnight") {
-			$estimate->shippingCost = $order->shipping;
-			$estimate->shipMethod = new RecordRef();
-			// NetSuite InternalId for UPS Overnight
-			$estimate->shipMethod->internalId = 825;
-		}
-		// Add payment method
-		$estimate->paymentMethod = new RecordRef();
-		if($order->payment->type=="Visa") {
-			$estimate->paymentMethod->internalId = 5;
-		} else if($order->payment->type=="Master Card") {
-			$estimate->paymentMethod->internalId = 4;
-		} else if($order->payment->type=="American Express") {
-			$estimate->paymentMethod->internalId = 6;
-		} 
-
-		// Set the CC payment as approved in NetSuite
-		$estimate->ccApproved = TRUE;
-
-		$estimate->otherRefNum = $order->orderNumber;
-
-		// Get the orderDateTimestamp
-		$orderTime = ($order->orderDate->time != "" && $order->orderDate->time != 0) ? $order->orderDate->time : time();
-		$estimate->tranDate = date("Y-m-d\TH:i:sP", $orderTime);
-		SCM_WC_Netsuite_Integrator::log_action('status_update', $estimate->tranDate);
-		if($order->giftMessage){
-			$estimate->memo = $order->giftMessage;
-		}
-
-		$estimateRequest = new AddRequest();
-		$estimateRequest->record = $estimate;
-
-		$addEstimateResponse = $service->add($estimateRequest);
-
-		if (!$addEstimateResponse->writeResponse->status->isSuccess) {
-		    $errors['estimateAdd'][] = $addEstimateResponse->writeResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		    return FALSE;
-		} else {
-		    $newEstimate = $addEstimateResponse->writeResponse->baseRef->internalId;
-		}
-		return $newEstimate;
 	}
 
 	public static function compareCountryCode($code){
@@ -725,22 +402,4 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 
 endif;
 
-if(isset($_GET['netsuite'])){
-	add_action('init', 'test_function');
-}
-function test_function(){
-	// update_post_meta(2120, 'netsuite_id', '');
-	$WC_NIC = new SCM_WC_Netsuite_Integrator_Customer();
-	$WC_NIQ = new SCM_WC_Netsuite_Integrator_Quote();
-	$order = $WC_NIQ->get_order_details(527);
-	if(!$order->customer->data->netsuite_id){
-		$netsuite_id = $WC_NIC->customer_search_by_email($order->customer->data->user_email);
-		if($netsuite_id){
-			$order->customer->data->netsuite_id = $netsuite_id;
-			update_user_meta($order->customer->ID, 'netsuite_id', $netsuite_id);
-		}
-	}
-	print_r($order); exit();
-	// $WC_NIQ->test_process_netsuite($order);
-	exit();
-}
+$WC_NIQ = new SCM_WC_Netsuite_Integrator_Quote();
