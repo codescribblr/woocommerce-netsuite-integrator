@@ -17,30 +17,36 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 	public function get_customer($customer_id = false) {
 
+		do_action( 'wni_before_get_customer', $customer_id, $this );
+
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		$request = new GetRequest();
 		$request->baseRef = new RecordRef();
 		$request->baseRef->internalId = $customer_id;
 		$request->baseRef->type = "customer";
 
+		$request = apply_filters( 'wni_get_customer_request', $request, $this );
+
 		try {
 			$getResponse = $service->get($request);
 		} catch (Exception $e) {
-			$errors['customer_search'][] = $e->getMessage();
+			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
 		if (!$getResponse->readResponse->status->isSuccess) {
-		    $errors['customer_search'][] = $getResponse->readResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		    $this->errors['customer_search'][] = $getResponse->readResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		    $customer = false;
 		} else {
 		    $customer = $getResponse->readResponse->record;
 		}
 
-		return $customer;
+		do_action( 'wni_after_get_customer', $customer_id, $this );
+
+		return apply_filters( 'wni_get_customer_response', $customer, $this );
 
 	}
 
@@ -49,10 +55,12 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 	 * 	Resorting to using saved searches within NetSuite UI 
 	 */
 	public function customer_search() {
+
+		do_action( 'wni_before_customer_search', $this );
 		
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		$service->setSearchPreferences(false, 20);
 
@@ -74,30 +82,36 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customerSearchRequest = new SearchRequest();
 		$customerSearchRequest->searchRecord = $customerSearch;
 
+		$customerSearchRequest = apply_filters( 'wni_customer_search_request', $customerSearchRequest, $this );
+
 		try {
 			$customerSearchResponse = $service->search($customerSearchRequest);
 		} catch (Exception $e) {
-			$errors['customer_search'][] = $e->getMessage();
+			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
 		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
+		    $this->errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
 		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
-			$errors['customer_search'][] = 'No Modified Customers Found';
+			$this->errors['customer_search'][] = 'No Modified Customers Found';
 			$search_results = false;
 		} else {
 		    $search_results = $customerSearchResponse->searchResult->recordList->record;
 		}
 
-		return $search_results;
+		do_action( 'wni_after_customer_search', $customerSearchResponse, $this );
+
+		return apply_filters( 'wni_customer_search_response', $search_results, $this );
 	}
 
 	public function customer_search_by_email($email) {
 
+		do_action( 'wni_before_customer_search_by_email', $email, $this );
+
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		$service->setSearchPreferences(true, 20);
 
@@ -112,27 +126,31 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customer_search_request = new SearchRequest();
 		$customer_search_request->searchRecord = $customer_search;
 
+		apply_filters( 'wni_customer_search_by_email_request', $customer_search_request, $this );
+
 		$customer_search_response = $service->search($customer_search_request);
 		SCM_WC_Netsuite_Integrator::log_action('search_response', print_r($customer_search_response, true));
 
 		if (!$customer_search_response->searchResult->status->isSuccess) {
-		    $errors['customer_search'][] = $customer_search_response->readResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+		    $this->errors['customer_search'][] = $customer_search_response->readResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		    return FALSE;
 		} elseif ($customer_search_response->searchResult->totalRecords === 0) {
-			$errors['customer_search'][] = 'No Customers Found with Web Store ID = ' . $order->customer->customerId;
+			$this->errors['customer_search'][] = 'No Customers Found with Web Store ID = ' . $order->customer->customerId;
 			$customer_internal_id = FALSE;
-			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		} elseif ($customer_search_response->searchResult->totalRecords > 1) {
-			$errors['customer_search'][] = 'Too many customers returned. Web Store ID was not found';
+			$this->errors['customer_search'][] = 'Too many customers returned. Web Store ID was not found';
 			$customer_internal_id = FALSE;
-			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		} else {
 		    $customer_internal_id = $customer_search_response->searchResult->recordList->record[0]->internalId;
 		    SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Search Successful');
 		}
 
-		return $customer_internal_id;
+		do_action( 'wni_after_customer_search_by_email', $customer_search_response, $this );
+
+		return apply_filters( 'wni_customer_search_by_email_response', $customer_internal_id, $customer_search_response, $this );
 
 	}
 
@@ -146,7 +164,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		return FALSE;
 
 		$service = $this->service;
-		$errors = array();
+		$this->errors = array();
 
 		$customer = new Customer();
 
@@ -199,8 +217,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$updateCustomerResponse = $service->update($updateCustomerRequest);
 
 		if (!$updateCustomerResponse->writeResponse->status->isSuccess) {
-		    $errors['customerUpdate'][] = $updateCustomerResponse->writeResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors));
+		    $this->errors['customerUpdate'][] = $updateCustomerResponse->writeResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors));
 	    	return FALSE;
 		}
 		SCM_WC_Netsuite_Integrator::log_action('success', 'Customer Update Successful');
@@ -219,7 +237,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		return FALSE;
 
 		$service = $this->service;
-		$errors = array();
+		$this->errors = array();
 
 		// ADD CUSTOMER
 		$customer = new Customer();
@@ -274,8 +292,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$addCustomerResponse = $service->add($addCustomerRequest);
 
 		if (!$addCustomerResponse->writeResponse->status->isSuccess) {
-			$errors['customerAdd'][] = $addCustomerResponse->writeResponse->status->statusDetail[0]->message;
-			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
+			$this->errors['customerAdd'][] = $addCustomerResponse->writeResponse->status->statusDetail[0]->message;
+			SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 	    	return FALSE;
 		} else {
 		    $customerInternalId = $addCustomerResponse->writeResponse->baseRef->internalId;
@@ -290,9 +308,11 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 	public function saved_modified_flag_customer_search() {
 
+		do_action( 'wni_before_modified_flag_customer_search', $this );
+
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		$customerSearch = new CustomerSearchAdvanced();
 		$customerSearch->savedSearchId = '345'; 
@@ -301,25 +321,29 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customerSearchRequest = new SearchRequest();
 		$customerSearchRequest->searchRecord = $customerSearch;
 
+		$customerSearchRequest = apply_filters( 'wni_modified_flag_customer_search_request', $customerSearchRequest, $this );
+
 		try {
 			$customerSearchResponse = $service->search($customerSearchRequest);
 		} catch (Exception $e) {
-			$errors['customer_search'][] = $e->getMessage();
+			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
 		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
+		    $this->errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
 		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
-			$errors['customer_search'][] = 'No Modified Customers Found';
+			$this->errors['customer_search'][] = 'No Modified Customers Found';
 			$search_results = false;
 		} else {
 		    $search_results = $customerSearchResponse->searchResult->searchRowList->searchRow;
-		    $errors['customer_search'][] = 'Successful';
+		    $this->errors['customer_search'][] = 'Successful';
 		}
 
-		SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
-		return $search_results;
+		do_action( 'wni_after_modified_flag_customer_search', $customerSearchResponse, $this );
+
+		SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
+		return apply_filters( 'wni_modified_flag_customer_search_response', $search_results, $this );
 
 	}
 
@@ -395,7 +419,6 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 			$customers = false;
 		}
 
-		// print_r($customers);
 		return $customers;
 
 	}
@@ -406,9 +429,11 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 	public function update_modified_flag($customer_internal_id, $modified_flag_value = false) {
 
+		do_action( 'wni_before_update_modified_flag', $customer_internal_id, $modified_flag_value, $this );
+
 		$service = $this->service;
 
-		$errors = array();
+		$this->errors = array();
 
 		// UPDATE CUSTOMER
 		$customer = new Customer();
@@ -431,40 +456,50 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 		$service->setPreferences(false, false, false, true);
 
+		$update_customer_request = apply_filters( 'wni_update_modified_flag_request', $update_customer_request, $this );
+
 		try {
 			$update_customer_response = $service->update($update_customer_request);
 		} catch (Exception $e) {
-			$errors['customer_update'][] = $e->getMessage();
+			$this->errors['customer_update'][] = $e->getMessage();
 		}
 
-		// print_r($update_customer_response);
+		$update_customer_response = apply_filters( 'wni_update_modified_flag_response', $update_customer_response, $this );
 
 		if (!$update_customer_response->writeResponse->status->isSuccess) {
-		    $errors['customer_update'][] = $update_customer_response->writeResponse->status->statusDetail[0]->message;
-		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors));
+		    $this->errors['customer_update'][] = $update_customer_response->writeResponse->status->statusDetail[0]->message;
+		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors));
 		    // mail('jon@createlaunchlead.com', 'Error Updating Customer ID', "oldId=".$oldId."\nnewId=".$newId);
-	    	return $errors;
+	    	return $this->errors;
 		}
 
 		SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$customer_internal_id.' Modified Flag Update Successful');
 		// mail('jon@createlaunchlead.com', 'Customer ID Update Successful', "oldId=".$oldId."\nnewId=".$newId);
-		return $customer_internal_id;
+
+		do_action( 'wni_after_update_modified_flag', $customer_internal_id, $update_customer_response, $this );
+		return apply_filters( 'wni_update_modified_flag_response_id', $customer_internal_id, $update_customer_response, $this );
 
 	}
 
 	public function upsert_customer($username, $email, $password='', $first_name = '', $last_name = '', $billing = array(), $shipping = array(), $netsuite_id='') {
 		
+		do_action( 'wni_before_upsert_customer', func_get_args(), $this );
+
 		$nickname = !empty($first_name) ? $first_name : $username;
 		$user_id = username_exists( $username );
 
 		// If user doesn't exist, add them as a customer to wordpress
 		if( $user_id === NULL ) {
 
+			do_action( 'wni_before_create_customer', func_get_args(), $this );
+
 			// Generate the password and create the user
 			if(empty($password)){
 				$password = wp_generate_password( 12, false );
 			}
 			$user_id = wp_create_user( $username, $password, $email );
+
+			do_action( 'wni_after_create_customer', $user_id, func_get_args(), $this );
 
 			if(!is_wp_error($user_id)) {
 
@@ -477,6 +512,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 				);
 
 				$user = new WP_User( $user_id );
+
+				do_action( 'wni_before_update_customer', $user, func_get_args(), $this );
 
 				update_user_meta($user_id, 'nickname', ($user->nickname) ? $user->nickname : $billing['billing_name']);
 				update_user_meta($user_id, 'last_synced_with_netsuite_date', time());
@@ -495,6 +532,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 				$user->set_role( $role );
 
+				do_action( 'wni_after_update_customer', $user, func_get_args(), $this );
+
 				// Email the user
 				// wp_mail( $email_address, 'Welcome!', 'Your Password: ' . $password );
 				SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.'('.$nickname.') Created');
@@ -508,6 +547,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		} else {
 
 			$user = new WP_User($user_id);
+
+			do_action( 'wni_before_update_customer', $user, func_get_args(), $this );
 
 			// Set the nickname
 			$updated = wp_update_user(
@@ -553,6 +594,8 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 			update_user_meta($user_id, 'last_synced_with_netsuite_date', time());
 			update_user_meta($user_id, 'netsuite_id', $netsuite_id);
+
+			do_action( 'wni_after_update_customer', $user, func_get_args(), $this );
 
 			SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.'('.$nickname.') Updated Successfully');
 

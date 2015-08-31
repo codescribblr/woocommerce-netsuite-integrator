@@ -29,6 +29,8 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 
 	public function get_product_by_sku($product_sku) {
 
+		do_action( 'wni_before_get_product_by_sku', $product_sku, $this );
+
 		if(empty($product_sku)){
 			$errors['product_search'][] = 'Product SKU cannot be empty.';
 			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
@@ -48,7 +50,7 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 			"log_path"  => $upload_dir['basedir'] . '/wc-netsuite-logs/netsuite-logs',
 		), $this);
 
-		//SKU is stored as Name in NetSuite
+		//SKU is stored as Name in NetSuite (or itemId)
 
 		$service = $this->service;
 
@@ -75,6 +77,8 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 		$req->passport = $service->passport;
 		$service->logout($req);
 
+		do_action( 'wni_after_get_product_by_sku', $product_search_response, $this );
+
 		if (!$product_search_response->searchResult->status->isSuccess || !isset($product_search_response)) {
 		    $errors['product_search'][] = $product_search_response->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
@@ -87,7 +91,7 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 			SCM_WC_Netsuite_Integrator::log_action('error', print_r($errors, true));
 		    return 0;
 		} else {
-		    return $product_search_response->searchResult->recordList->record[0];
+		    return apply_filters('wni_get_product_by_sku_search_response', $product_search_response->searchResult->recordList->record[0], $this);
 		}
 
 	}

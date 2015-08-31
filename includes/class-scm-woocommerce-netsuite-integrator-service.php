@@ -11,6 +11,7 @@ class SCM_WC_Netsuite_Integrator_Service {
 
 	protected $config = array();
 	protected $service = null;
+	protected $errors = array();
 
 	protected function __construct() {
 		
