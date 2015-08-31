@@ -38,6 +38,15 @@ While the plugin allows for any account to be connected, the functionality used 
 
 == Changelog ==
 
+= 1.2.2 =
+
+* 13b2969 added wordpress actions and filters to each function to allow modification of functionality within theme files.
+* af38d1b added functions to main integrator to modify shipping method html. added required field to netsuite settings for admin email notices on integration errors. integrated quote with payment_complete action in woocommerce. setup cron jobs on integration failure to retry sending to netsuite. if it fails more than twice, it will continue to try every hour, but it will also email the admin every hour letting them know there's an error.
+* 2765f3e updated customer and quote classes to extend coutrycode function from parent service class. added custom user fields for netsuite. added boilerplate functions for adding and updating customers in netsuite. added default product to every estimate add request so we always have a product to send.
+* 571638d updated product search by sku to include logout on each call. may need to remove. added quote funcitonality. It's working at this point but only for quotes that have all the needed info available. No error checking for missing info has been added yet.
+* ed75adb updated readme description.
+
+
 = 1.2.1 =
 * 2ce8960 updated readme.
 
