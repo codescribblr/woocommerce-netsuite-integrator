@@ -67,6 +67,8 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 		$product_search_request = new SearchRequest();
 		$product_search_request->searchRecord = $product_search;
 
+		$product_search_request = apply_filters('wni_get_product_by_sku_search_request', $product_search_request, $this);
+
 		try {
 			$product_search_response = $service->search($product_search_request);
 		} catch (Exception $e) {

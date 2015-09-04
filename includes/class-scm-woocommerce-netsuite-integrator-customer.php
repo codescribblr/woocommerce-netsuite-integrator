@@ -31,20 +31,20 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$request = apply_filters( 'wni_get_customer_request', $request, $this );
 
 		try {
-			$getResponse = $service->get($request);
+			$get_customer_response = $service->get($request);
 		} catch (Exception $e) {
 			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
-		if (!$getResponse->readResponse->status->isSuccess) {
-		    $this->errors['customer_search'][] = $getResponse->readResponse->status->statusDetail[0]->message;
+		if (!$get_customer_response->readResponse->status->isSuccess) {
+		    $this->errors['customer_search'][] = $get_customer_response->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		    $customer = false;
 		} else {
-		    $customer = $getResponse->readResponse->record;
+		    $customer = $get_customer_response->readResponse->record;
 		}
 
-		do_action( 'wni_after_get_customer', $customer_id, $this );
+		do_action( 'wni_after_get_customer', $get_customer_response, $this );
 
 		return apply_filters( 'wni_get_customer_response', $customer, $this );
 
@@ -126,7 +126,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customer_search_request = new SearchRequest();
 		$customer_search_request->searchRecord = $customer_search;
 
-		apply_filters( 'wni_customer_search_by_email_request', $customer_search_request, $this );
+		$customer_search_request = apply_filters( 'wni_customer_search_by_email_request', $customer_search_request, $this );
 
 		$customer_search_response = $service->search($customer_search_request);
 		SCM_WC_Netsuite_Integrator::log_action('search_response', print_r($customer_search_response, true));
@@ -324,23 +324,23 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customerSearchRequest = apply_filters( 'wni_modified_flag_customer_search_request', $customerSearchRequest, $this );
 
 		try {
-			$customerSearchResponse = $service->search($customerSearchRequest);
+			$customer_search_response = $service->search($customerSearchRequest);
 		} catch (Exception $e) {
 			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
-		if (!$customerSearchResponse->searchResult->status->isSuccess) {
-		    $this->errors['customer_search'][] = $customerSearchResponse->readResponse->status->statusDetail[0]->message;
+		if (!$customer_search_response->searchResult->status->isSuccess) {
+		    $this->errors['customer_search'][] = $customer_search_response->readResponse->status->statusDetail[0]->message;
 		    $search_results = false;
-		} elseif ($customerSearchResponse->searchResult->totalRecords === 0) {
+		} elseif ($customer_search_response->searchResult->totalRecords === 0) {
 			$this->errors['customer_search'][] = 'No Modified Customers Found';
 			$search_results = false;
 		} else {
-		    $search_results = $customerSearchResponse->searchResult->searchRowList->searchRow;
+		    $search_results = $customer_search_response->searchResult->searchRowList->searchRow;
 		    $this->errors['customer_search'][] = 'Successful';
 		}
 
-		do_action( 'wni_after_modified_flag_customer_search', $customerSearchResponse, $this );
+		do_action( 'wni_after_modified_flag_customer_search', $customer_search_response, $this );
 
 		SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		return apply_filters( 'wni_modified_flag_customer_search_response', $search_results, $this );

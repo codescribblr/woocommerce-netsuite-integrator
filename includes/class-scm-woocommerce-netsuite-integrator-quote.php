@@ -351,21 +351,21 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			$estimate->memo = $order->customer_message;
 		}
 
-		$estimateRequest = new AddRequest();
-		$estimateRequest->record = apply_filters('wni_add_estimate_request_record', $estimate, $order, $this);
+		$add_estimate_request = new AddRequest();
+		$add_estimate_request->record = $estimate;
 
-		do_action('wni_before_add_estimate', $estimateRequest, $order, $this);
+		$add_estimate_request = apply_filters('wni_add_estimate_request', $add_estimate_request, $order, $this);
+
 		try {
-			$addEstimateResponse = $service->add($estimateRequest);
+			$add_estimate_response = $service->add($add_estimate_request);
 		} catch (Exception $e) {
 			$this->errors['estimate_add'][] = $e->getMessage();
 		}
-		do_action('wni_after_add_estimate', $addEstimateResponse, $order, $this);
 
-		if (!$addEstimateResponse->writeResponse->status->isSuccess) {
-		    $this->errors['estimate_add'][] = $addEstimateResponse->writeResponse->status->statusDetail[0]->message;
+		if (!$add_estimate_response->writeResponse->status->isSuccess) {
+		    $this->errors['estimate_add'][] = $add_estimate_response->writeResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
-		    do_action('wni_create_netsuite_estimate_failed', $addEstimateResponse, $this);
+		    do_action('wni_create_netsuite_estimate_failed', $add_estimate_response, $this);
 		    if($resend){
 		    	$message = sprintf( __( 'There is some kind of issue happening with the Woocommerce NetSuite Integrator. Multiple attempts have failed to send Order #%d through to NetSuite. We will continue to attempt to send every hour, but it probably needs to be handled manually.', 'woocommerce-netsuite-integrator'), $order_id );
 		    	$headers = 'From: '.get_option('blogname').' <'.get_option('admin_email').'>' . "\r\n";
@@ -374,15 +374,15 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    $this->schedule_create_netsuite_estimate($order->id, time() + (60 * 60), true);
 		    return FALSE;
 		} else {
-			do_action('wni_create_netsuite_estimate_succeeded', $addEstimateResponse, $this);
-		    $newEstimate = $addEstimateResponse->writeResponse->baseRef->internalId;
-		    $newEstimate = apply_filters('wni_new_estimate_id', $newEstimate, $estimateRequest, $addEstimateResponse, $this);
-		    update_post_meta($order->id, 'netsuite_id', $newEstimate);
+			do_action('wni_create_netsuite_estimate_succeeded', $add_estimate_response, $this);
+		    $new_estimate_id = $add_estimate_response->writeResponse->baseRef->internalId;
+		    $new_estimate_id = apply_filters('wni_new_estimate_id', $new_estimate_id, $add_estimate_request, $add_estimate_response, $this);
+		    update_post_meta($order->id, 'netsuite_id', $new_estimate_id);
 		}
 
-		do_action('wni_after_create_netsuite_estimate', $order, $newEstimate, $estimateRequest, $addEstimateResponse, $this);
+		do_action('wni_after_create_netsuite_estimate', $order, $new_estimate_id, $add_estimate_request, $add_estimate_response, $this);
 
-		return $newEstimate;
+		return $new_estimate_id;
 	}
 
 	public function schedule_create_netsuite_estimate($order_id, $time_before_sheduling = FALSE, $resend = FALSE) {

@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.2.2
+Version: 1.2.3
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -50,7 +50,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.2.2';
+	const VERSION = '1.2.3';
 
 	/**
 	 * Instance of this class.
@@ -90,6 +90,8 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'tgmpa_register', array( $this, 'register_required_plugins' ) );
 		add_action( 'init', array( $this, 'setup_cron' ) );
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), array( $this, 'wni_add_plugin_action_link' ) );
+		add_filter( 'plugin_row_meta', array( $this, 'wni_add_plugin_row_meta' ), 10, 2 );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -133,6 +135,25 @@ class SCM_WC_Netsuite_Integrator {
 			rmdir($dir); 
 		} 
 	}
+
+	public function wni_add_plugin_action_link($links) {
+
+
+		$settings = array('settings' => '<a href="admin.php?page=acf-options-netsuite-settings">' . __('Settings', 'woocommerce-netsuite-integrator') . '</a>');
+		$links = array_merge($settings, $links);
+
+		return $links;
+	}
+
+	public function wni_add_plugin_row_meta($links, $file) {
+
+		if($file == plugin_basename(__FILE__)){
+			$links['details'] = '<a href="plugin-install.php?tab=plugin-information&amp;plugin=woocommerce-netsuite-integrator&amp;TB_iframe=true&amp;width=772&amp;height=1157" class="thickbox" aria-label="More information about Woocommerce NetSuite Integrator" data-title="Woocommerce NetSuite Integrator">' . __('View details', 'woocommerce-netsuite-integrator') . '</a>';
+		}
+		
+		return $links;
+	}
+
 
 	public function register_required_plugins() {
 		/*

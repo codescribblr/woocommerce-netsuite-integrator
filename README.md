@@ -3,14 +3,15 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3
-Stable tag: 1.2.2
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 This plugin provides a custom integration between NetSuite and WooCommerce developed solely for Wolfpack Wholesale.
 
 == Description ==
-## WooCommerce NetSuite Integrator -- by Showcase Marketing (codescribblr) ##
+## WooCommerce NetSuite Integrator ##
+##### by Showcase Marketing (codescribblr) #####
 This plugin provides a custom integration between NetSuite and WooCommerce developed solely for Wolfpack Wholesale. It includes customer, product, and quote integration. It also uses BitBucket to autoupdate the plugin from a private repository.
 
 ### Customer Integration ###
@@ -19,8 +20,330 @@ Customers are be fully integrated. Wolfpack will be able to create customers in 
 ### Product Integration ###
 Products will be integrated. Any product that is created or edited on the webstore (with the exception of bulk-order products like pack juice) will compare the SKU in the webstore with the SKU in NetSuite to ensure that the product exists in NetSuite. This will help cut down on quotes having products that are not in NetSuite.
 
-### TO DO: Quote Integration ##
+### Quote Integration ###
 Quotes will be integrated. At this point, an order on the webstore will create a quote in NetSuite. There will be 3 custom fields that could potentially be filled with each quote. If a quote contains an item that has a configurable product (e.g. pack juice), there will be a "configurable item" flag checked. If a quote has a missing product (i.e. the product doesn't exist/match in NetSuite), a "missing item" flag will be checked. Along with this, a "missing item quantity" field will be filled to let you know how many items were missing on this quote so your team can be sure that they get everything on the order correct.
+
+************
+
+### WordPress Hooks ###
+There are many hooks available for developers to connect into and customize the input/output of the plugin's functions. They are all listed below.
+
+#### Customer Hooks ####
+
+The hook `wni_before_get_customer` runs before the get_customer function does anything.
+	add_action('wni_before_get_customer', 'my_wni_before_get_customer', 10, 2);
+	function my_wni_before_get_customer($customer_id, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_get_customer` runs after the get_customer function does everything but before it returns.
+	add_action('wni_after_get_customer', 'my_wni_after_get_customer', 10, 2);
+	function my_wni_after_get_customer($get_customer_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_before_customer_search_by_email` runs before the customer_search_by_email function does anything.
+	add_action('wni_before_customer_search_by_email', 'my_wni_before_customer_search_by_email', 10, 2);
+	function my_wni_before_customer_search_by_email($email, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_customer_search_by_email` runs after the customer_search_by_email function does everything but before it returns.
+	add_action('wni_after_customer_search_by_email', 'my_wni_after_customer_search_by_email', 10, 2);
+	function my_wni_after_customer_search_by_email($customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_before_modified_flag_customer_search` runs before the modified_flag_customer_search function does anything.
+	add_action('wni_before_modified_flag_customer_search', 'my_wni_before_modified_flag_customer_search', 10, 1);
+	function my_wni_before_modified_flag_customer_search($SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_modified_flag_customer_search` runs after the modified_flag_customer_search function does everything but before it returns.
+	add_action('wni_after_modified_flag_customer_search', 'my_wni_after_modified_flag_customer_search', 10, 2);
+	function my_wni_after_modified_flag_customer_search($customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_before_update_modified_flag` runs before the update_modified_flag function does anything.
+	add_action('wni_before_update_modified_flag', 'my_wni_before_update_modified_flag', 10, 3);
+	function my_wni_before_update_modified_flag($customer_internal_id, (bool)$modified_flag_value, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_update_modified_flag` runs after the update_modified_flag function does everything but before it returns.
+	add_action('wni_after_update_modified_flag', 'my_wni_after_update_modified_flag', 10, 3);
+	function my_wni_after_update_modified_flag($customer_internal_id, $update_customer_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+	}
+
+The hook `wni_before_upsert_customer` runs before the upsert_customer function does anything.
+	add_action('wni_before_upsert_customer', 'my_wni_before_upsert_customer', 10, 2);
+	function my_wni_before_upsert_customer($customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+
+	}
+
+The hook `wni_after_upsert_customer` runs after the upsert_customer function does everything but before it returns.
+	add_action('wni_after_upsert_customer', 'my_wni_after_upsert_customer', 10, 3);
+	function my_wni_after_upsert_customer($customer_object, $customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+	}
+
+The hook `wni_before_create_customer` runs before the customer is created in WordPress.
+	add_action('wni_before_create_customer', 'my_wni_before_create_customer', 10, 2);
+	function my_wni_before_create_customer($customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+
+	}
+
+The hook `wni_after_create_customer` runs after the customer is created in WordPress.
+	add_action('wni_after_create_customer', 'my_wni_after_create_customer', 10, 3);
+	function my_wni_after_create_customer($user_id, $customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+	}
+
+The hook `wni_before_update_customer` runs before the customer is created in WordPress.
+	add_action('wni_before_update_customer', 'my_wni_before_update_customer', 10, 3);
+	function my_wni_before_update_customer($user_object, $customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+
+	}
+
+The hook `wni_after_update_customer` runs after the customer is created in WordPress.
+	add_action('wni_after_update_customer', 'my_wni_after_update_customer', 10, 3);
+	function my_wni_after_update_customer($user_object, $customer_args, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		/* 
+		$customer_args contains an array with these values:
+		array(
+			'username',
+			'email',
+			'password',
+			'first_name',
+			'last_name',
+			'billing_address_array',
+			'shipping_address_array',
+			'netsuite_id'
+		);
+		*/
+		//do stuff here
+	}
+
+
+#### Product Hooks ####
+
+The hook `wni_before_get_product_by_sku` runs before the get_product_by_sku function does anything.
+	add_action('wni_before_get_product_by_sku', 'my_wni_before_get_product_by_sku', 10, 2);
+	function my_wni_before_get_product_by_sku($product_id, $SCM_WC_Netsuite_Integrator_Product_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_get_product_by_sku` runs after the get_product_by_sku function does everything but before it returns.
+	add_action('wni_after_get_product_by_sku', 'my_wni_after_get_product_by_sku', 10, 2);
+	function my_wni_after_get_product_by_sku($product_search_response, $SCM_WC_Netsuite_Integrator_Product_object) {
+		//do stuff here
+	}
+
+#### Quote Hooks ####
+
+The hook `wni_before_create_netsuite_estimate` runs before the create_netsuite_estimate function does anything.
+	add_action('wni_before_create_netsuite_estimate', 'my_wni_before_create_netsuite_estimate', 10, 2);
+	function my_wni_before_create_netsuite_estimate($order_id, $SCM_WC_Netsuite_Integrator_Quote_object) {
+		//do stuff here
+	}
+
+The hook `wni_after_create_netsuite_estimate` runs after the create_netsuite_estimate function does everything but before it returns.
+	add_action('wni_after_create_netsuite_estimate', 'my_wni_after_create_netsuite_estimate', 10, 5);
+	function my_wni_after_create_netsuite_estimate($order, $new_estimate, $estimate_request, $add_estimate_response, $SCM_WC_Netsuite_Integrator_Quote_object) {
+		//do stuff here
+	}
+
+The hook `wni_create_netsuite_estimate_failed` runs if the call to NetSuite failed.
+	add_action('wni_create_netsuite_estimate_failed', 'my_wni_create_netsuite_estimate_failed', 10, 2);
+	function my_wni_create_netsuite_estimate_failed($add_estimate_response, $SCM_WC_Netsuite_Integrator_Quote_object) {
+		//do stuff here
+	}
+
+The hook `wni_create_netsuite_estimate_succeeded` runs if the call to NetSuite succeeded.
+	add_action('wni_create_netsuite_estimate_succeeded', 'my_wni_create_netsuite_estimate_succeeded', 10, 2);
+	function my_wni_create_netsuite_estimate_succeeded($add_estimate_response, $SCM_WC_Netsuite_Integrator_Quote_object) {
+		//do stuff here
+	}
+
+
+### WordPress Filters ###
+There are many filters available for developers to connect into and filter the input/output of the plugin's functions. They are all listed below.
+
+#### Customer Filters ####
+
+The filter `wni_get_customer_request` filters the request before it's made.
+	add_filter('wni_get_customer_request', 'my_wni_get_customer_request', 10, 2);
+	function my_wni_get_customer_request($get_customer_request, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $get_customer_request;
+	}
+
+The filter `wni_get_customer_response` filters the response before it's returned.
+	add_filter('wni_get_customer_response', 'my_wni_get_customer_response', 10, 2);
+	function my_wni_get_customer_response($get_customer_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $get_customer_response;
+	}
+
+The filter `wni_customer_search_by_email_request` filters the request before it's made.
+	add_filter('wni_customer_search_by_email_request', 'my_wni_customer_search_by_email_request', 10, 2);
+	function my_wni_customer_search_by_email_request($customer_search_request, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_search_request;
+	}
+
+The filter `wni_customer_search_by_email_response` filters the response before it's returned.
+	add_filter('wni_customer_search_by_email_response', 'my_wni_customer_search_by_email_response', 10, 3);
+	function my_wni_customer_search_by_email_response($customer_internal_id, $customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_internal_id;
+	}
+
+The filter `wni_modified_flag_customer_search_request` filters the request before it's made.
+	add_filter('wni_modified_flag_customer_search_request', 'my_wni_modified_flag_customer_search_request', 10, 2);
+	function my_wni_modified_flag_customer_search_request($customer_search_request, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_search_request;
+	}
+
+The filter `wni_modified_flag_customer_search_response` filters the response before it's returned.
+	add_filter('wni_modified_flag_customer_search_response', 'my_wni_modified_flag_customer_search_response', 10, 2);
+	function my_wni_modified_flag_customer_search_response($customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_search_response;
+	}
+
+The filter `wni_update_modified_flag_request` filters the request before it's made.
+	add_filter('wni_update_modified_flag_request', 'my_wni_update_modified_flag_request', 10, 2);
+	function my_wni_update_modified_flag_request($customer_search_request, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_search_request;
+	}
+
+The filter `wni_update_modified_flag_response` filters the response before it's returned.
+	add_filter('wni_update_modified_flag_response', 'my_wni_update_modified_flag_response', 10, 2);
+	function my_wni_update_modified_flag_response($customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_search_response;
+	}
+
+The filter `wni_update_modified_flag_response_id` filters the response before it's returned.
+	add_filter('wni_update_modified_flag_response_id', 'my_wni_update_modified_flag_response_id', 10, 3);
+	function my_wni_update_modified_flag_response_id($customer_internal_id, $customer_search_response, $SCM_WC_Netsuite_Integrator_Customer_object) {
+		//do stuff here
+		return $customer_internal_id;
+	}
+
+#### Product Filters ####
+
+The filter `wni_get_product_by_sku_search_request` filters the request before it's made.
+	add_filter('wni_get_product_by_sku_search_request', 'my_wni_get_product_by_sku_search_request', 10, 2);
+	function my_wni_get_product_by_sku_search_request($product_search_request, $SCM_WC_Netsuite_Integrator_Product_object) {
+		//do stuff here
+		return $product_search_request;
+	}
+
+The filter `wni_get_product_by_sku_search_response` filters the response before it's returned.
+	add_filter('wni_get_product_by_sku_search_response', 'my_wni_get_product_by_sku_search_response', 10, 2);
+	function my_wni_get_product_by_sku_search_response($product_search_response, $SCM_WC_Netsuite_Integrator_Product_object) {
+		//do stuff here
+		return $product_search_response;
+	}
+
+#### Quote Filters ####
+
+The filter `wni_before_validation_product_sku` filters the sku before it's validated by NetSuite.
+	add_filter('wni_before_validation_product_sku', 'my_wni_before_validation_product_sku', 10, 3);
+	function my_wni_before_validation_product_sku($product_sku, $WC_Product, $product_from_order) {
+		//do stuff here
+		return $product_sku;
+	}
+
+The filter `wni_add_estimate_request` filters the request before it's made.
+	add_filter('wni_add_estimate_request', 'my_wni_add_estimate_request', 10, 3);
+	function my_wni_add_estimate_request($add_estimate_request, $order, $SCM_WC_Netsuite_Integrator_Quote_object) {
+		//do stuff here
+		return $add_estimate_request;
+	}
+
+The filter `wni_new_estimate_id` filters the id before it's returned.
+	add_filter('wni_new_estimate_id', 'my_wni_new_estimate_id', 10, 4);
+	function my_wni_new_estimate_id($new_estimate_id, $add_estimate_request, $add_estimate_response, $SCM_WC_Netsuite_Integrator_Product_object) {
+		//do stuff here
+		return $new_estimate_id;
+	}
+
 
 == Installation ==
 1. Download the [latest tagged version zip from the BitBucket repo](https://bitbucket.org/showcase/woocommerce-netsuite-integrator/downloads#tag-downloads).
