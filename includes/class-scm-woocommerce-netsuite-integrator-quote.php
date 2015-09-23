@@ -182,6 +182,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		do_action( 'wni_before_create_netsuite_estimate', $order_id, $this );
 
 		$order = $this->get_order_details($order_id);
+		$this->errors['order_id'] = $order_id;
 
 		// Don't process the order if it's already in NetSuite
 		if(!empty($order->netsuite_id) && is_numeric($order->netsuite_id)){
@@ -243,6 +244,9 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			// SEARCH BY PRODUCT SKU
 			$product_id = ($webOrderItem['variation_id']) ? $webOrderItem['variation_id'] : $webOrderItem['product_id'];
 			$WC_Product = new WC_Product($product_id);
+			if( has_category('bulk', $product_id) ) {
+				add_filter( 'wni_before_validation_product_sku', array($this, 'generate_custom_sku'), 10, 3);
+			}
 			$webStoreSKU = apply_filters('wni_before_validation_product_sku', $WC_Product->get_sku(), $WC_Product, $webOrderItem);
 
 			$WC_NIP = new SCM_WC_Netsuite_Integrator_Product();
@@ -391,6 +395,13 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 
 		wp_schedule_single_event( $time_before_sheduling, 'wni_create_netsuite_estimate', array( $order_id, $resend ) );
 
+	}
+
+	public function generate_custom_sku($sku, $WC_Product, $WC_Order_Item) {
+		$item = $WC_Order_Item;
+		$sku = $item['pa_size'] . '-' . $_product->get_sku() . '-' . strtoupper($item['pa_nicotine-strength']) . '-' . ucwords(str_replace('-', ' ', $item['pa_flavor'])) . '-' . substr($item['pa_blend'], 0, 2) . '/' . substr($item['pa_blend'], 2);
+
+		return $sku;
 	}
 
 	public static function compareCountryCode($code){
