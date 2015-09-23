@@ -486,10 +486,11 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		do_action( 'wni_before_upsert_customer', func_get_args(), $this );
 
 		$nickname = !empty($first_name) ? $first_name : $username;
-		$user_id = username_exists( $username );
+		$user = get_user_by( 'email', $email );
+		$user_id = ($user) ? $user->ID : FALSE;
 
 		// If user doesn't exist, add them as a customer to wordpress
-		if( $user_id === NULL ) {
+		if( $user_id === FALSE ) {
 
 			do_action( 'wni_before_create_customer', func_get_args(), $this );
 
@@ -536,17 +537,15 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 				// Email the user
 				// wp_mail( $email_address, 'Welcome!', 'Your Password: ' . $password );
-				SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.'('.$nickname.') Created');
+				SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.' ('.$nickname.') Created');
 				return $updated;
 			} else {
 				SCM_WC_Netsuite_Integrator::log_action('error', print_r($user_id));
-				return $user_id;
+				return FALSE;
 			}
 
 		// If user exists, update them with the new info provided
 		} else {
-
-			$user = new WP_User($user_id);
 
 			do_action( 'wni_before_update_customer', $user, func_get_args(), $this );
 
@@ -597,7 +596,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 			do_action( 'wni_after_update_customer', $user, func_get_args(), $this );
 
-			SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.'('.$nickname.') Updated Successfully');
+			SCM_WC_Netsuite_Integrator::log_action('success', 'Customer '.$user_id.' ('.$nickname.') Updated Successfully');
 
 			return $updated;
 
