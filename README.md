@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3
-Stable tag: 1.2.4
+Stable tag: 1.2.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -11,12 +11,13 @@ This plugin provides a custom integration between NetSuite and WooCommerce devel
 
 == Description ==
 
-## WooCommerce NetSuite Integrator ##
-##### by Showcase Marketing (codescribblr) #####
 This plugin provides a custom integration between NetSuite and WooCommerce developed solely for Wolfpack Wholesale. It includes customer, product, and quote integration. It also uses BitBucket to autoupdate the plugin from a private repository.
 
+## WooCommerce NetSuite Integrator ##
+##### by Showcase Marketing (codescribblr) #####
+
 ### Customer Integration ###
-Customers are be fully integrated. Wolfpack will be able to create customers in NetSuite and give them a username, email, and password for the website. This data will be automatically pulled into the webstore to create the customer in the webstore. We will use the default billing and shipping address from the customer record in NetSuite to autofill the billing and shipping fields on the webstore, but will allow the customer to override those addresses before sending a quote through to NetSuite. We will be setup to automatically pull this data every hour (it will be set in minutes, and the number of minutes will be configurable by Wolfpack). We will only pull the customers that have a modified flag set. This modified flag will be based on the custom fields mentioned above and any other fields that Wolfpack deems appropriate to trigger the modified flag.
+Customers will be fully integrated. Wolfpack will be able to create customers in NetSuite and give them a username, email, and password for the website. This data will be automatically pulled into the webstore to create the customer in the webstore. We will use the default billing and shipping address from the customer record in NetSuite to autofill the billing and shipping fields on the webstore, but will allow the customer to override those addresses before sending a quote through to NetSuite. We will be setup to automatically pull this data every hour (it will be set in minutes, and the number of minutes will be configurable by Wolfpack). We will only pull the customers that have a modified flag set. This modified flag will be based on the custom fields mentioned above and any other fields that Wolfpack deems appropriate to trigger the modified flag.
 
 ### Product Integration ###
 Products will be integrated. Any product that is created or edited on the webstore (with the exception of bulk-order products like pack juice) will compare the SKU in the webstore with the SKU in NetSuite to ensure that the product exists in NetSuite. This will help cut down on quotes having products that are not in NetSuite.
@@ -396,8 +397,26 @@ While the plugin allows for any account to be connected, the functionality used 
 
 == Changelog ==
 
+= 1.2.5 =
+
+* 79234e2 updates sync function to use minutes instead of hours. updates version to 1.2.5
+* 36eec12 fixes bug in error logging that was pulling incorrect support email option.
+* f3e5218 updates customer upsert function to use get_user_by_email instead of username_exists.
+
+= 1.2.4 = 
+
+* 1c35c6b Merge branch 'master' of bitbucket.org:showcase/woocommerce-netsuite-integrator
+* 65e0fa3 updates documentation formatting.
+* f76785c README.md edited online with Bitbucket
+
+= 1.2.3 =
+
+* 189cb2c updates documentation to include hooks and filters in plugin description. updates multiple filters and hooks to be more consistent across functions. adds links to plugin page for viewing details and settings screens.
+
+
 = 1.2.2 =
 
+* db8b4e5 updated readme to current commit list.
 * 13b2969 added wordpress actions and filters to each function to allow modification of functionality within theme files.
 * af38d1b added functions to main integrator to modify shipping method html. added required field to netsuite settings for admin email notices on integration errors. integrated quote with payment_complete action in woocommerce. setup cron jobs on integration failure to retry sending to netsuite. if it fails more than twice, it will continue to try every hour, but it will also email the admin every hour letting them know there's an error.
 * 2765f3e updated customer and quote classes to extend coutrycode function from parent service class. added custom user fields for netsuite. added boilerplate functions for adding and updating customers in netsuite. added default product to every estimate add request so we always have a product to send.
