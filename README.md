@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3
-Stable tag: 1.2.5
+Stable tag: 1.2.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,11 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.2.6 =
+
+* e95266d adds order_id to error log for easier navigation of logs. adds filter to customize sku for bulk products.
+* 326cea9 updates readme and version bump.
 
 = 1.2.5 =
 
