@@ -369,7 +369,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    if($resend){
 		    	$message = sprintf( __( 'There is some kind of issue happening with the Woocommerce NetSuite Integrator. Multiple attempts have failed to send Order #%d through to NetSuite. We will continue to attempt to send every hour, but it probably needs to be handled manually.', 'woocommerce-netsuite-integrator'), $order_id );
 		    	$headers = 'From: '.get_option('blogname').' <'.get_option('admin_email').'>' . "\r\n";
-		    	wp_mail(get_option('wni_support_email'), get_option('blogname') . ' ' . __('NetSuite Integration Error', 'woocommerce-netsuite-integrator'), $message, $headers);
+		    	wp_mail(get_option('options_wni_support_email'), get_option('blogname') . ' ' . __('NetSuite Integration Error', 'woocommerce-netsuite-integrator'), $message, $headers);
 		    }
 		    $this->schedule_create_netsuite_estimate($order->id, time() + (60 * 60), true);
 		    return FALSE;
