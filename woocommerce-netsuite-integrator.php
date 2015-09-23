@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.2.4
+Version: 1.2.5
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -50,7 +50,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.2.4';
+	const VERSION = '1.2.5';
 
 	/**
 	 * Instance of this class.
@@ -437,7 +437,7 @@ class SCM_WC_Netsuite_Integrator {
 						'label' => 'Customer Sync Interval',
 						'name' => 'wni_customer_sync_interval',
 						'type' => 'number',
-						'instructions' => 'Number of hours between each customer synchronization request between NetSuite and WooCommerce store. (1-24 hrs)',
+						'instructions' => 'Number of minutes between each customer synchronization request between NetSuite and WooCommerce store. (1-120 minutes)',
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array (
@@ -863,7 +863,7 @@ class SCM_WC_Netsuite_Integrator {
 	public function woocommerce_netsuite_custom_schedule($schedules) {
 	    
 	    $schedules['woocommerce_netsuite_customer_sync_schedule'] = array(
-	        'interval' => get_option('options_wni_customer_sync_interval') * 60 * 60, // number of hours * 60 minutes * 60 seconds
+	        'interval' => get_option('options_wni_customer_sync_interval') * 60, // number of minutes * 60 seconds
 	        'display'  => __( 'WooCommerce NetSuite Integrator Custom Schedule' ),
 	    );
 	 
