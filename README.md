@@ -2,8 +2,8 @@
 Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
-Tested up to: 4.3
-Stable tag: 1.2.6
+Tested up to: 4.3.1
+Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,12 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.2.7 = 
+
+* c182f17 adds new custom status to orders sent to netsuite. modifies orders not sent to processing status.
+* eaefe47 adds custom status and icon for sent to NetSuite status on woocommerce orders.
+* 3d08aba version bump.
 
 = 1.2.6 =
 
