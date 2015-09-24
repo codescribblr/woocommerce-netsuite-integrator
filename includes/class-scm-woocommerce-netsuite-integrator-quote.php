@@ -178,7 +178,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	*/
 	public function create_netsuite_estimate($order_id, $resend = FALSE) {
 		
-		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'create_netsuite_estimate has been called');
+		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'create_netsuite_estimate has been called for order #'.$order_id);
 		do_action( 'wni_before_create_netsuite_estimate', $order_id, $this );
 
 		$order = $this->get_order_details($order_id);
@@ -376,12 +376,15 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    	wp_mail(get_option('options_wni_support_email'), get_option('blogname') . ' ' . __('NetSuite Integration Error', 'woocommerce-netsuite-integrator'), $message, $headers);
 		    }
 		    $this->schedule_create_netsuite_estimate($order->id, time() + (60 * 60), true);
+		    $order->update_status('processing');
 		    return FALSE;
 		} else {
 			do_action('wni_create_netsuite_estimate_succeeded', $add_estimate_response, $this);
 		    $new_estimate_id = $add_estimate_response->writeResponse->baseRef->internalId;
 		    $new_estimate_id = apply_filters('wni_new_estimate_id', $new_estimate_id, $add_estimate_request, $add_estimate_response, $this);
 		    update_post_meta($order->id, 'netsuite_id', $new_estimate_id);
+		    $order->update_status('sent-netsuite');
+
 		}
 
 		do_action('wni_after_create_netsuite_estimate', $order, $new_estimate_id, $add_estimate_request, $add_estimate_response, $this);
