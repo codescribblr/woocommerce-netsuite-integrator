@@ -92,6 +92,9 @@ class SCM_WC_Netsuite_Integrator {
 		add_filter( 'cron_schedules', array( $this, 'woocommerce_netsuite_custom_schedule' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), array( $this, 'wni_add_plugin_action_link' ) );
 		add_filter( 'plugin_row_meta', array( $this, 'wni_add_plugin_row_meta' ), 10, 2 );
+		add_action( 'init', array( $this, 'wc_register_post_statuses' ) );
+		add_filter( 'wc_order_statuses', array( $this, 'wc_add_order_statuses' ) );
+		add_action( 'admin_print_scripts', array( $this, 'wc_add_custom_order_status_icon' ) );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -888,6 +891,47 @@ class SCM_WC_Netsuite_Integrator {
 	public function netsuite_configuration_missing_notice() {
 		echo '<div class="error"><p>' . sprintf( __( 'WooCommerce NetSuite Integrator requires that you provide all the required %s', 'woocommerce-netsuite-integrator' ), '<a href="/wp-admin/admin.php?page=acf-options-netsuite-settings">' . __( 'NetSuite configuration options!') . '</a>' ) . '</p></div>';
 	}
+
+	// Register New Order Statuses
+	public function wc_register_post_statuses() {
+	    register_post_status( 'wc-sent-netsuite', array(
+	        'label'                     => _x( 'Sent to NetSuite', 'WooCommerce Order status', 'woocommerce-netsuite-integrator' ),
+	        'public'                    => true,
+	        'exclude_from_search'       => false,
+	        'show_in_admin_all_list'    => true,
+	        'show_in_admin_status_list' => true,
+	        'label_count'               => _n_noop( 'Sent to Netsuite <span class="count">(%s)</span>', 'Sent to Netsuite <span class="count">(%s)</span>', 'woocommerce-netsuite-integrator' )
+	    ) );
+	}
+
+	// Add New Order Statuses to WooCommerce
+	public function wc_add_order_statuses( $order_statuses ) {
+	    
+	    $new_order_statuses = array();
+
+	    // add new order status after processing
+	    foreach ( $order_statuses as $key => $status ) {
+
+	        $new_order_statuses[ $key ] = $status;
+
+	        if ( 'wc-processing' === $key ) {
+	            $new_order_statuses['wc-sent-netsuite'] = __( 'Sent to NetSuite', 'WooCommerce Order status', 'woocommerce-netsuite-integrator' );
+	        }
+	    }
+
+	    return $new_order_statuses;
+
+	}
+	
+	public function wc_add_custom_order_status_icon() {
+		echo "<style>\n";
+		echo "/* Add custom status order icons */\n";
+		echo ".column-order_status mark.sent-netsuite {\n";
+		echo "\tcontent: url(".plugins_url( 'assets/icon-ns.png', __FILE__ ).");\n";
+		echo "}\n";	 
+		echo "</style>\n";
+	}
+	
 
 	// Move this function to theme functions.php
 	public function modify_no_shipping_method_html() {
