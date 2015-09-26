@@ -371,12 +371,13 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
 		    do_action('wni_create_netsuite_estimate_failed', $add_estimate_response, $this);
 		    if($resend){
-		    	$message = sprintf( __( 'There is some kind of issue happening with the Woocommerce NetSuite Integrator. Multiple attempts have failed to send Order #%d through to NetSuite. We will continue to attempt to send every hour, but it probably needs to be handled manually.', 'woocommerce-netsuite-integrator'), $order_id );
+		    	$message = sprintf( __( 'There is some kind of issue happening with the Woocommerce NetSuite Integrator ('.$add_estimate_response->writeResponse->status->statusDetail[0]->message.'). Multiple attempts have failed to send Order #%d through to NetSuite. We will continue to attempt to send every hour, but it probably needs to be handled manually.', 'woocommerce-netsuite-integrator'), $order_id );
 		    	$headers = 'From: '.get_option('blogname').' <'.get_option('admin_email').'>' . "\r\n";
 		    	wp_mail(get_option('options_wni_support_email'), get_option('blogname') . ' ' . __('NetSuite Integration Error', 'woocommerce-netsuite-integrator'), $message, $headers);
 		    }
 		    $this->schedule_create_netsuite_estimate($order->id, time() + (60 * 60), true);
 		    $order->update_status('processing');
+		    $order->add_order_note('Error adding to NetSuite: '. $add_estimate_response->writeResponse->status->statusDetail[0]->message);
 		    return FALSE;
 		} else {
 			do_action('wni_create_netsuite_estimate_succeeded', $add_estimate_response, $this);
@@ -384,6 +385,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    $new_estimate_id = apply_filters('wni_new_estimate_id', $new_estimate_id, $add_estimate_request, $add_estimate_response, $this);
 		    update_post_meta($order->id, 'netsuite_id', $new_estimate_id);
 		    $order->update_status('sent-netsuite');
+		    $order->add_order_note('Order added to NetSuite successfully.');
 
 		}
 
