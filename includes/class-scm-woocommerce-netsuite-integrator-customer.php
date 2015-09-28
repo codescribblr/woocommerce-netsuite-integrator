@@ -608,7 +608,7 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		$customers = $this->get_and_organize_modified_customers();
 		if(!empty($customers)){
 			foreach($customers as $customer){
-				if($this->upsert_customer($customer['username'], $customer['email'], $customer['password'], $customer['companyName'], '', $customer['billAddress'], $customer['shipAddress'], $customer['internalId'])){
+				if($this->upsert_customer($customer['email'], $customer['email'], $customer['password'], $customer['companyName'], '', $customer['billAddress'], $customer['shipAddress'], $customer['internalId'])){
 					$this->update_modified_flag($customer['internalId']);
 				}	
 			}
