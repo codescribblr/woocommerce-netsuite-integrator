@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.2.8
+Stable tag: 1.2.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -397,9 +397,15 @@ While the plugin allows for any account to be connected, the functionality used 
 
 == Changelog ==
 
+= 1.2.9 =
+
+* 6c9c8c5 adds sales rep id and email to user's meta data in WP.
+* 1c29934 changes usercreation function to use email for username and email fields in new user creation.
+
+
 = 1.2.8 = 
 
-* adds better error processing notices in admin email and order notes.
+* 330eea1 adds better error processing notices in admin email and order notes.
 
 = 1.2.7 = 
 
