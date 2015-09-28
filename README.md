@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.2.9
+Stable tag: 1.2.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,10 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.2.10 =
+
+* adds functionality to allow login with email or username.
 
 = 1.2.9 =
 

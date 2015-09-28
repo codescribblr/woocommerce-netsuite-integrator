@@ -5,7 +5,7 @@ Plugin URI: https://bitbucket.org/showcase/woocommerce-netsuite-integrator
 Description: WooCommerce NetSuite Integrator.
 Author: Showcase Marketing
 Author URI: http://createlaunchlead.com
-Version: 1.2.9
+Version: 1.2.10
 License: GPLv2 or later
 Text Domain: woocommerce-netsuite-integrator
 Domain Path: /languages
@@ -50,7 +50,7 @@ class SCM_WC_Netsuite_Integrator {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.2.9';
+	const VERSION = '1.2.10';
 
 	/**
 	 * Instance of this class.
@@ -95,6 +95,10 @@ class SCM_WC_Netsuite_Integrator {
 		add_action( 'init', array( $this, 'wc_register_post_statuses' ) );
 		add_filter( 'wc_order_statuses', array( $this, 'wc_add_order_statuses' ) );
 		add_action( 'admin_print_scripts', array( $this, 'wc_add_custom_order_status_icon' ) );
+		// WP Authentication Filters
+		remove_filter( 'authenticate', 'wp_authenticate_username_password', 20, 3 );
+		add_filter( 'authenticate', array( $this, 'email_login_authenticate') , 20, 3 );
+		add_action( 'login_form', array( $this, 'username_or_email_login' ) );
 
 		if ( is_admin() ) {
 			if( class_exists('BitBucket_Plugin_Updater') ) {
@@ -942,6 +946,47 @@ class SCM_WC_Netsuite_Integrator {
 	// Move this function to theme functions.php
 	public function no_shipping_html() {
 		return '<p>Shipping is not calculated for quotes.</p>';
+	}
+
+	/**
+	 * If an email address is entered in the username box, then look up the matching username and authenticate as per normal, using that.
+	 *
+	 * @param string $user
+	 * @param string $username
+	 * @param string $password
+	 * @return Results of autheticating via wp_authenticate_username_password(), using the username found when looking up via email.
+	 */
+	public function email_login_authenticate( $user, $username, $password ) {
+		if ( is_a( $user, 'WP_User' ) )
+			return $user;
+
+		if ( !empty( $username ) ) {
+			$username = str_replace( '&', '&amp;', stripslashes( $username ) );
+			$user = get_user_by( 'email', $username );
+			if ( isset( $user, $user->user_login, $user->user_status ) && 0 == (int) $user->user_status )
+				$username = $user->user_login;
+		}
+
+		return wp_authenticate_username_password( null, $username, $password );
+	}
+
+	/**
+	 * Modify the string on the login page to prompt for username or email address
+	 */
+	public function username_or_email_login() {
+		echo basename( $_SERVER['SCRIPT_NAME'] );
+		if ( !in_array( basename( $_SERVER['SCRIPT_NAME'] ), array('wp-login.php', 'index.php') ) )
+			return;
+
+		?><script type="text/javascript">
+		// Form Label
+		if ( document.getElementById('loginform') )
+			document.getElementById('loginform').childNodes[1].childNodes[1].childNodes[0].nodeValue = '<?php echo esc_js( __( 'Username or Email', 'email-login' ) ); ?>';
+
+		// Error Messages
+		if ( document.getElementById('login_error') )
+			document.getElementById('login_error').innerHTML = document.getElementById('login_error').innerHTML.replace( '<?php echo esc_js( __( 'username' ) ); ?>', '<?php echo esc_js( __( 'Username or Email' , 'email-login' ) ); ?>' );
+		</script><?php
 	}
 
 }
