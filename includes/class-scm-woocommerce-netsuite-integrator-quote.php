@@ -205,10 +205,30 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		}
 
 		// If we have a customer in NetSuite already, update their info to the current info,
+		// pull the salesRep associated with this customer,
 		// and move on to the next step.
 		if ($order->customer->data->netsuite_id) {
 
 			// UPDATE CUSTOMER
+
+			// PULL SALES REP
+			$WC_NIC = new SCM_WC_Netsuite_Integrator_Customer();
+			$netsuite_customer = $WC_NIC->get_customer($order->customer->data->netsuite_id);
+			if($netsuite_customer){
+				$sales_rep_id = $netsuite_customer->internalId;
+				$order->customer->data->sales_rep_id =  $sales_rep_id;
+				update_user_meta($order->customer->ID, 'sales_rep_id', $sales_rep_id);
+
+				$netsuite_sales_rep = $WC_NIC->get_customer($sales_rep_id);
+				if($netsuite_sales_rep){
+					$sales_rep_email = $netsuite_customer->email;
+					$order->customer->data->sales_rep_email =  $sales_rep_email;
+					update_user_meta($order->customer->ID, 'sales_rep_email', $sales_rep_email);
+				}
+			}
+
+			
+			
 			
 			// If there's no errors, go ahead and move on to the next step.
 
