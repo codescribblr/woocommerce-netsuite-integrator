@@ -974,7 +974,6 @@ class SCM_WC_Netsuite_Integrator {
 	 * Modify the string on the login page to prompt for username or email address
 	 */
 	public function username_or_email_login() {
-		echo basename( $_SERVER['SCRIPT_NAME'] );
 		if ( !in_array( basename( $_SERVER['SCRIPT_NAME'] ), array('wp-login.php', 'index.php') ) )
 			return;
 
