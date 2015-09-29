@@ -22,9 +22,12 @@ class SCM_WC_Netsuite_Integrator_Product extends SCM_WC_Netsuite_Integrator_Serv
 	}
 
 	public function setup_actions() {
-		add_action( 'save_post', array($this, 'validate_sku_on_save'), 10, 3 );
-		add_action( 'woocommerce_ajax_save_product_variations', array($this, 'validate_sku_on_save_variation'), 10, 1 );
-		add_action( 'admin_notices', array($this, 'product_admin_notices'), 0);
+		if(get_option('options_wni_enable_product_validation_sync')){
+			add_action( 'save_post', array($this, 'validate_sku_on_save'), 10, 3 );
+			add_action( 'woocommerce_ajax_save_product_variations', array($this, 'validate_sku_on_save_variation'), 10, 1 );
+			add_action( 'admin_notices', array($this, 'product_admin_notices'), 0);
+		}
+		
 	}
 
 	public function get_product_by_sku($product_sku) {
