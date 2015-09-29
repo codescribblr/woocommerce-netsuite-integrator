@@ -15,9 +15,9 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 		
 	}
 
-	public function get_customer($customer_id = false) {
+	public function get_entity($entity_id, $entity_type = 'customer') {
 
-		do_action( 'wni_before_get_customer', $customer_id, $this );
+		do_action( 'wni_before_get_'.$entity_type, $entity_id, $this );
 
 		$service = $this->service;
 
@@ -25,28 +25,28 @@ class SCM_WC_Netsuite_Integrator_Customer extends SCM_WC_Netsuite_Integrator_Ser
 
 		$request = new GetRequest();
 		$request->baseRef = new RecordRef();
-		$request->baseRef->internalId = $customer_id;
-		$request->baseRef->type = "customer";
+		$request->baseRef->internalId = $entity_id;
+		$request->baseRef->type = $entity_type;
 
-		$request = apply_filters( 'wni_get_customer_request', $request, $this );
+		$request = apply_filters( 'wni_get_'.$entity_type.'_request', $request, $this );
 
 		try {
-			$get_customer_response = $service->get($request);
+			$get_entity_response = $service->get($request);
 		} catch (Exception $e) {
 			$this->errors['customer_search'][] = $e->getMessage();
 		}
 
-		if (!$get_customer_response->readResponse->status->isSuccess) {
-		    $this->errors['customer_search'][] = $get_customer_response->readResponse->status->statusDetail[0]->message;
+		if (!$get_entity_response->readResponse->status->isSuccess) {
+		    $this->errors[$entity_type.'_search'][] = $get_entity_response->readResponse->status->statusDetail[0]->message;
 		    SCM_WC_Netsuite_Integrator::log_action('error', print_r($this->errors, true));
-		    $customer = false;
+		    $entity = false;
 		} else {
-		    $customer = $get_customer_response->readResponse->record;
+		    $entity = $get_entity_response->readResponse->record;
 		}
 
-		do_action( 'wni_after_get_customer', $get_customer_response, $this );
+		do_action( 'wni_after_get_'.$entity_type, $get_entity_response, $this );
 
-		return apply_filters( 'wni_get_customer_response', $customer, $this );
+		return apply_filters( 'wni_get_'.$entity_type.'_response', $entity, $this );
 
 	}
 
