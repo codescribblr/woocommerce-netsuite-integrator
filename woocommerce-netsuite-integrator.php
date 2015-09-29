@@ -440,6 +440,22 @@ class SCM_WC_Netsuite_Integrator {
 						'endpoint' => 0,
 					),
 					array (
+						'key' => 'field_55cffb13b831e1fs',
+						'label' => 'Enable Customer Sync',
+						'name' => 'wni_enable_customer_sync',
+						'type' => 'true_false',
+						'instructions' => 'Uncheck this to disable the customer data syncronization with NetSuite.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 1,
+					),
+					array (
 						'key' => 'field_55cffc1fb8325',
 						'label' => 'Customer Sync Interval',
 						'name' => 'wni_customer_sync_interval',
@@ -479,6 +495,22 @@ class SCM_WC_Netsuite_Integrator {
 						'endpoint' => 0,
 					),
 					array (
+						'key' => 'field_55cffb13b831e2ps',
+						'label' => 'Enable Product Sync',
+						'name' => 'wni_enable_product_validation_sync',
+						'type' => 'true_false',
+						'instructions' => 'Uncheck this to disable the product SKU validation/syncronization with NetSuite.<br />This only disables validation for adding/updating products in WooCommerce. Quotes will still validate the product SKU as required by NetSuite.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 1,
+					),
+					array (
 						'key' => 'field_55cffb38b8320',
 						'label' => 'Quote Options',
 						'name' => '',
@@ -493,6 +525,38 @@ class SCM_WC_Netsuite_Integrator {
 						),
 						'placement' => 'left',
 						'endpoint' => 0,
+					),
+					array (
+						'key' => 'field_55cffb13b831e3qs',
+						'label' => 'Enable Quote Sync',
+						'name' => 'wni_enable_quote_sync',
+						'type' => 'true_false',
+						'instructions' => 'Uncheck this to disable the quote data syncronization with NetSuite.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 1,
+					),
+					array (
+						'key' => 'field_55cffb13b831e4neo',
+						'label' => 'Enable Sales Rep New Order Email',
+						'name' => 'wni_enable_sales_rep_new_order_email',
+						'type' => 'true_false',
+						'instructions' => 'Uncheck this to disable the custom new order emails to associated sales reps.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'message' => '',
+						'default_value' => 1,
 					),
 					array (
 						'key' => 'field_55cffa23f223f20',
@@ -751,6 +815,50 @@ class SCM_WC_Netsuite_Integrator {
 						'message' => '',
 						'default_value' => 0,
 					),
+					array (
+						'key' => 'field_55df6e22743753',
+						'label' => 'Sales Rep NetSuite Internal Id',
+						'name' => 'sales_rep_netsuite_id',
+						'type' => 'number',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'min' => '',
+						'max' => '',
+						'step' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
+					array (
+						'key' => 'field_55df6e22743753a',
+						'label' => 'Sales Rep Email',
+						'name' => 'sales_rep_email',
+						'type' => 'text',
+						'instructions' => '',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
+					),
 				),
 				'location' => array (
 					array (
@@ -859,12 +967,15 @@ class SCM_WC_Netsuite_Integrator {
 
 	public function setup_cron() {
 
-		$netsuite_customer_integrator = new SCM_WC_Netsuite_Integrator_Customer();
-		// Schedule Cron Job Event
-		if ( ! wp_next_scheduled( 'woocommerce_netsuite_integrator_customer_cron' ) ) {
-			wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_customer_sync_schedule', 'woocommerce_netsuite_integrator_customer_cron' );
+		if(get_option('options_wni_enable_customer_sync')){
+			$netsuite_customer_integrator = new SCM_WC_Netsuite_Integrator_Customer();
+			// Schedule Cron Job Event
+			if ( ! wp_next_scheduled( 'woocommerce_netsuite_integrator_customer_cron' ) ) {
+				wp_schedule_event( current_time( 'timestamp' ), 'woocommerce_netsuite_customer_sync_schedule', 'woocommerce_netsuite_integrator_customer_cron' );
+			}
+			add_action( 'woocommerce_netsuite_integrator_customer_cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
 		}
-		add_action( 'woocommerce_netsuite_integrator_customer_cron', array( $netsuite_customer_integrator, 'get_modified_customers_and_update_wordpress_customers' ) );
+		
 	}
 
 	public function woocommerce_netsuite_custom_schedule($schedules) {
