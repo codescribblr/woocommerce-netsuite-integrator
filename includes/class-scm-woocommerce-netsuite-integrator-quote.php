@@ -18,7 +18,6 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	}
 
 	public function setup_filters() {
-		// add the filter
 		// add_filter( 'woocommerce_add_cart_item', array($this, 'filter_woocommerce_add_cart_item'), 10, 2 );
 		// add_filter( 'woocommerce_get_sku', array($this, 'variable_product_sku_generator'), 10, 2 );
 	}
@@ -177,6 +176,10 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	* we can pull updates from NetSuite on this order ID
 	*/
 	public function create_netsuite_estimate($order_id, $resend = FALSE) {
+
+		if(!get_option('options_wni_enable_quote_sync')){
+			return FALSE;
+		}
 		
 		SCM_WC_Netsuite_Integrator::log_action('processing_inside_started', 'create_netsuite_estimate has been called for order #'.$order_id);
 		do_action( 'wni_before_create_netsuite_estimate', $order_id, $this );
@@ -185,7 +188,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$this->errors['order_id'] = $order_id;
 
 		// Don't process the order if it's already in NetSuite
-		if(!empty($order->netsuite_id) && is_numeric($order->netsuite_id)){
+		if( ( !empty($order->netsuite_id) && is_numeric($order->netsuite_id) ) || $order->get_status() == 'sent-netsuite'){
 			return FALSE;
 		}
 
@@ -212,23 +215,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			// UPDATE CUSTOMER
 
 			// PULL SALES REP
-			$WC_NIC = new SCM_WC_Netsuite_Integrator_Customer();
-			$netsuite_customer = $WC_NIC->get_customer($order->customer->data->netsuite_id);
-			if($netsuite_customer){
-				$sales_rep_id = $netsuite_customer->internalId;
-				$order->customer->data->sales_rep_id =  $sales_rep_id;
-				update_user_meta($order->customer->ID, 'sales_rep_id', $sales_rep_id);
-
-				$netsuite_sales_rep = $WC_NIC->get_customer($sales_rep_id);
-				if($netsuite_sales_rep){
-					$sales_rep_email = $netsuite_customer->email;
-					$order->customer->data->sales_rep_email =  $sales_rep_email;
-					update_user_meta($order->customer->ID, 'sales_rep_email', $sales_rep_email);
-				}
-			}
-
-			
-			
+			$this->get_sales_rep_from_netsuite($order->id);
 			
 			// If there's no errors, go ahead and move on to the next step.
 
@@ -406,6 +393,9 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		    update_post_meta($order->id, 'netsuite_id', $new_estimate_id);
 		    $order->update_status('sent-netsuite');
 		    $order->add_order_note('Order added to NetSuite successfully.');
+		    if(get_option('options_wni_enable_sales_rep_new_order_email')){
+				$this->resend_admin_order_email($order);
+			}
 
 		}
 
@@ -421,6 +411,73 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		wp_schedule_single_event( $time_before_sheduling, 'wni_create_netsuite_estimate', array( $order_id, $resend ) );
 
 	}
+
+	public function get_sales_rep_from_netsuite($order_id) {
+		// PULL SALES REP
+		$order = $this->get_order_details($order_id);
+		$WC_NIC = new SCM_WC_Netsuite_Integrator_Customer();
+		$netsuite_customer = $WC_NIC->get_entity($order->customer->data->netsuite_id);
+		if($netsuite_customer){
+			$sales_rep_id = $netsuite_customer->salesRep->internalId;
+			$order->customer->data->sales_rep_id =  $sales_rep_id;
+			update_user_meta($order->customer->ID, 'sales_rep_netsuite_id', $sales_rep_id);
+
+			$netsuite_sales_rep = $WC_NIC->get_entity($sales_rep_id, 'employee');
+			if($netsuite_sales_rep){
+				$sales_rep_email = $netsuite_sales_rep->email;
+				$order->customer->data->sales_rep_email =  $sales_rep_email;
+				update_user_meta($order->customer->ID, 'sales_rep_email', $sales_rep_email);
+			}
+		}
+		return $order;
+	}
+
+	// Change new order email recipient for registered customers
+	public function change_admin_new_order_email_recipient( $recipient, $order ) {
+
+		$order = $this->get_order_details($order->id);
+		$customer_id = $order->get_user_id();
+		if($sales_rep_email = get_user_meta($customer_id, 'sales_rep_email', true)){
+			$new_recipient = $sales_rep_email;
+		} else {
+			$updated_order = $this->get_sales_rep_from_netsuite($order->id);
+			$new_recipient = $updated_order->customer->data->sales_rep_email;
+		}
+	    
+	    return ( empty($new_recipient) || ($recipient == $new_recipient) ) ? FALSE : $new_recipient;
+	}
+
+	public function resend_admin_order_email($order) {
+
+		add_filter( 'woocommerce_email_recipient_new_order', array( $this, 'change_admin_new_order_email_recipient' ), 10, 2);
+
+		do_action( 'woocommerce_before_resend_order_emails', $order );
+
+		// Ensure gateways are loaded in case they need to insert data into the emails
+		WC()->payment_gateways();
+		WC()->shipping();
+
+		// Load mailer
+		$mailer = WC()->mailer();
+
+		$email_to_send = 'new_order';
+
+		$mails = $mailer->get_emails();
+
+		if ( ! empty( $mails ) ) {
+			foreach ( $mails as $mail ) {
+				if ( $mail->id == $email_to_send ) {
+					$mail->trigger( $order->id );
+				}
+			}
+		}
+
+		do_action( 'woocommerce_after_resend_order_email', $order, $email_to_send );
+
+		remove_filter( 'woocommerce_email_recipient_new_order', array( $this, 'change_admin_new_order_email_recipient'), 10 );
+
+	}
+	
 
 	public function generate_custom_sku($sku, $WC_Product, $WC_Order_Item) {
 		$item = $WC_Order_Item;
