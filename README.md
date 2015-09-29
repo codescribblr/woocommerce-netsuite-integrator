@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.2.10
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -397,9 +397,17 @@ While the plugin allows for any account to be connected, the functionality used 
 
 == Changelog ==
 
+= 1.3.0 =
+
+* 1d35a55 adds check for options to disable quote functionality. adds check for 'sent to netsuite' status which allows user to manually set status to 'sent' and override the sending to netsuite functionality. adds the functionality (with option to disable) new order emails to sales rep associated with the customer on a quote. Stores this email and sales rep id as custom user meta.
+* 3a39f84 adds option check on product validation to allow for disabling of product SKU validation.
+* bdcc027 adds multiple custom fields to options that allows for disabling of each different piece of the integration.
+* 4220728 abstracts get_customer function to allow for getting other entities (li ke employees). Updates filters and hooks to allow for multiple customizations.
+* afe6c0d fixes bug in login replacement functions where login scriptname was displayed to user.
+
 = 1.2.10 =
 
-* adds functionality to allow login with email or username.
+* 0d6fb77 adds functionality to allow login with email or username.
 
 = 1.2.9 =
 
