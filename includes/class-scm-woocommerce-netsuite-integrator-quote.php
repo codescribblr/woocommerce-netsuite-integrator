@@ -20,11 +20,20 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	public function setup_filters() {
 		// add_filter( 'woocommerce_add_cart_item', array($this, 'filter_woocommerce_add_cart_item'), 10, 2 );
 		// add_filter( 'woocommerce_get_sku', array($this, 'variable_product_sku_generator'), 10, 2 );
+		add_filter( 'woocommerce_my_account_my_orders_actions', array( $this, 'add_resend_netsuite_order_actions' ), 10, 2 );
 	}
 
 	public function setup_actions() {
 		add_action( 'woocommerce_payment_complete', array($this, 'schedule_create_netsuite_estimate'), 20, 1 );
 		add_action( 'wni_create_netsuite_estimate', array($this, 'create_netsuite_estimate'), 10, 2);
+
+		// Admin
+		if ( is_admin() ) {
+			// handle single order resend from order action button
+			add_action( 'wp_ajax_wni_resend_netsuite_order', array( $this, 'process_ajax_order_resend' ) );
+			// Add 'Resend to Netsuite' action on orders page
+			add_action( 'woocommerce_admin_order_actions_start', array( $this, 'add_resend_netsuite_order_actions' ), 10, 1 );
+		}
 	}
 
 	public function variable_product_sku_generator($sku, $product){
@@ -175,7 +184,7 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	* This returns the newly created Sales Order ID so that
 	* we can pull updates from NetSuite on this order ID
 	*/
-	public function create_netsuite_estimate($order_id, $resend = FALSE) {
+	public function create_netsuite_estimate($order_id, $resend = FALSE, $manual_resend = FALSE) {
 
 		if(!get_option('options_wni_enable_quote_sync')){
 			return FALSE;
@@ -447,9 +456,26 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	    return ( empty($new_recipient) || ($recipient == $new_recipient) ) ? FALSE : $new_recipient;
 	}
 
+	// Add new order email cc
+	public function add_admin_new_order_email_cc( $headers, $email_type, $order ) {
+
+		if($email_type != 'new_order') {
+			return $headers;
+		}
+		
+		if($custom_cc_emails = get_option('options_wni_sales_rep_new_order_cc')){
+			$headers .= 'CC: '. $custom_cc_emails . "\r\n";
+		} else {
+			return $headers;
+		}
+	    
+	    return $headers;
+	}
+
 	public function resend_admin_order_email($order) {
 
 		add_filter( 'woocommerce_email_recipient_new_order', array( $this, 'change_admin_new_order_email_recipient' ), 10, 2);
+		add_filter( 'woocommerce_email_headers', array( $this, 'add_admin_new_order_email_cc' ), 10, 3);
 
 		do_action( 'woocommerce_before_resend_order_emails', $order );
 
@@ -477,7 +503,52 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		remove_filter( 'woocommerce_email_recipient_new_order', array( $this, 'change_admin_new_order_email_recipient'), 10 );
 
 	}
-	
+
+	public function process_ajax_order_resend() {
+
+		if ( ! is_admin() || ! current_user_can( 'edit_posts' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'woocommerce-netsuite-integrator' ) );
+		}
+
+		if ( ! check_admin_referer( 'wni_resend_netsuite_order' ) ) {
+			wp_die( __( 'You have taken too long, please go back and try again.', 'woocommerce-netsuite-integrator' ) );
+		}
+
+		$order_id = ! empty( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : '';
+
+		if ( ! $order_id ) {
+			die;
+		}
+		$response = new StdClass();
+		$netsuite_estimate_id = $this->create_netsuite_estimate($order_id, true, true);
+		if($netsuite_estimate_id===FALSE){
+			$response->type = "error";
+			$response->message = "There was an error sending to NetSuite. (".$this->errors['estimate_add'][0].")";
+			$response->order_num = $order_id;
+		} else {
+			$response->type = "updated";
+			$response->message = "Order #".$order_id." was sent successfully to NetSuite.";
+			$response->order_num = $order_id;
+			$response->netsuite_id = $netsuite_estimate_id;
+		}
+		echo json_encode($response);
+
+		exit;
+	}
+
+	public function add_resend_netsuite_order_actions($order) {
+
+		if($order->get_status() == 'sent-netsuite' || !get_option('options_wni_enable_quote_sync')){
+			return FALSE;
+		}
+
+	    $action = 'resend-netsuite';
+		$url = wp_nonce_url( admin_url( 'admin-ajax.php?action=wni_resend_netsuite_order&order_id=' . $order->id ), 'wni_resend_netsuite_order' );
+		$name = __( 'Resend to Netsuite', 'woocommerce-netsuite-integrator' );
+
+		printf( '<a class="button tips %s" href="%s" data-tip="%s">%s</a>', $action, esc_url( $url ), $name, $name );
+
+	}
 
 	public function generate_custom_sku($sku, $WC_Product, $WC_Order_Item) {
 		$item = $WC_Order_Item;
