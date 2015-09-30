@@ -83,6 +83,7 @@ class SCM_WC_Netsuite_Integrator {
 			$this->includes();
 		}
 		$this->setup_options();
+		$this->enqueue_scripts_styles();
 		$upload_dir =  wp_upload_dir();
 
 		// Load plugin text domain
@@ -109,6 +110,14 @@ class SCM_WC_Netsuite_Integrator {
 		// Move this to theme functions.php
 		$this->modify_no_shipping_method_html();
 
+	}
+
+	public function enqueue_scripts_styles() {
+		if(is_admin()){
+			wp_enqueue_style( 'woocommerce-netsuite-integrator-admin', SCM_WC_Netsuite_Integrator::get_assets_url() . 'css/admin.css', array( 'dashicons' ), SCM_WC_Netsuite_Integrator::VERSION );
+			// admin JS
+			wp_enqueue_script( 'woocommerce-netsuite-integrator-admin', SCM_WC_Netsuite_Integrator::get_assets_url() . 'js/admin.js', array('jquery'), SCM_WC_Netsuite_Integrator::VERSION, true );
+		}
 	}
 
 	/*
@@ -547,7 +556,7 @@ class SCM_WC_Netsuite_Integrator {
 						'label' => 'Enable Sales Rep New Order Email',
 						'name' => 'wni_enable_sales_rep_new_order_email',
 						'type' => 'true_false',
-						'instructions' => 'Uncheck this to disable the custom new order emails to associated sales reps.',
+						'instructions' => 'Uncheck this to disable the custom new order emails to associated sales reps. These emails are only sent when the order/quote successfully sends to NetSuite.',
 						'required' => 0,
 						'conditional_logic' => 0,
 						'wrapper' => array (
@@ -557,6 +566,27 @@ class SCM_WC_Netsuite_Integrator {
 						),
 						'message' => '',
 						'default_value' => 1,
+					),
+					array (
+						'key' => 'field_55cffb13b831e4neocc',
+						'label' => 'Sales Rep New Order Email CC',
+						'name' => 'wni_sales_rep_new_order_cc',
+						'type' => 'text',
+						'instructions' => 'Add a comma separated list of email addresses you want to CC on new order emails sent to sales reps (after order is sent to NetSuite). Leave blank to disable.',
+						'required' => 0,
+						'conditional_logic' => 0,
+						'wrapper' => array (
+							'width' => '',
+							'class' => '',
+							'id' => '',
+						),
+						'default_value' => '',
+						'placeholder' => '',
+						'prepend' => '',
+						'append' => '',
+						'maxlength' => '',
+						'readonly' => 0,
+						'disabled' => 0,
 					),
 					array (
 						'key' => 'field_55cffa23f223f20',
