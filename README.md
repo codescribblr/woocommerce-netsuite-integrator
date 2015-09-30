@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,12 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.3.1 =
+
+* fddc0ad implements custom field for cc on sales rep new order emails. adds a resend to netsuite button on the orders screen in woocommerce that allows the user to manually resend the order without having to wait until the cron runs.
+* 4c3a34b adds field for custom cc on sales rep new order emails. adds admin.css and admin.js files to allow for customization to the interface.
+* 35d8920 version_bump. updates readme.md
 
 = 1.3.0 =
 
