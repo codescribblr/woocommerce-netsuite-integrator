@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,12 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.3.2 =
+
+* 3ae75d1 adds shipping and billing address to fields sent to netsuite on estimate add request.
+* d9c7a6e remove unneeded filter for adding actions to woocommerce admin orders screen.
+* 19825a7 version bump. updates readme.
 
 = 1.3.1 =
 
