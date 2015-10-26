@@ -20,7 +20,6 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 	public function setup_filters() {
 		// add_filter( 'woocommerce_add_cart_item', array($this, 'filter_woocommerce_add_cart_item'), 10, 2 );
 		// add_filter( 'woocommerce_get_sku', array($this, 'variable_product_sku_generator'), 10, 2 );
-		add_filter( 'woocommerce_my_account_my_orders_actions', array( $this, 'add_resend_netsuite_order_actions' ), 10, 2 );
 	}
 
 	public function setup_actions() {
