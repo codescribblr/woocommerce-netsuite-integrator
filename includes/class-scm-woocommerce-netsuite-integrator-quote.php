@@ -311,6 +311,29 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$estimate->entity = new RecordRef();
 		$estimate->entity->internalId = $order->customer->data->netsuite_id;
 
+		
+		// Attach billing and shipping addresses
+		$billing_address = new Address();
+		$billing_address->addressee = $order->billing_address['first_name'] . " " . $order->billing_address['last_name'];
+		$billing_address->addr1 = $order->billing_address['address_1'];
+		$billing_address->addr2 = $order->billing_address['address_2'];
+		$billing_address->city = $order->billing_address['city'];
+		$billing_address->state = $order->billing_address['state'];
+		$billing_address->zip = $order->billing_address['postcode'];
+		$billing_address->country = self::compareCountryCode($order->billing_address['country']);
+
+		$shipping_address = new Address();
+		$shipping_address->addressee = $order->shipping_address['first_name'] . " " . $order->shipping_address['last_name'];
+		$shipping_address->addr1 = $order->shipping_address['address_1'];
+		$shipping_address->addr2 = $order->shipping_address['address_2'];
+		$shipping_address->city = $order->shipping_address['city'];
+		$shipping_address->state = $order->shipping_address['state'];
+		$shipping_address->zip = $order->shipping_address['postcode'];
+		$shipping_address->country = self::compareCountryCode($order->shipping_address['country']);
+
+		$estimate->billingAddress = $billing_address;
+		$estimate->shippingAddress = $shipping_address;
+
 		// $estimate->isTaxable = false;
 		// $estimate->discountRate = "0";
 		
