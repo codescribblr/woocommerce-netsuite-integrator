@@ -3,7 +3,7 @@ Contributors: codescribblr, jwads922
 Tags: woocommerce, netsuite, bitbucket
 Requires at least: 4.0
 Tested up to: 4.3.1
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -396,6 +396,11 @@ While the plugin allows for any account to be connected, the functionality used 
 3. Customer Options
 
 == Changelog ==
+
+= 1.3.3 =
+
+* 3e623ad fixes bug in quote integration that caused quotes to fail. adds phone and attention fields to order object.
+* 627acd6 version bump. updates readme.
 
 = 1.3.2 =
 
