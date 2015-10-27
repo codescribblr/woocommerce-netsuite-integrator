@@ -92,7 +92,9 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 			'city'          => $order->billing_city,
 			'state'         => $order->billing_state,
 			'postcode'      => $order->billing_postcode,
-			'country'       => $order->billing_country
+			'country'       => $order->billing_country,
+			'phone'			=> $order->billing_phone,
+			'email'			=> $order->billing_email
 		);
 		$order->netsuite_id = get_post_meta($order_id, 'netsuite_id', true);
 
@@ -321,6 +323,8 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$billing_address->state = $order->billing_address['state'];
 		$billing_address->zip = $order->billing_address['postcode'];
 		$billing_address->country = self::compareCountryCode($order->billing_address['country']);
+		$billing_address->addrPhone = $order->billing_address['phone'];
+		$billing_address->attention = $order->billing_address['first_name'] . " " . $order->billing_address['last_name'];
 
 		$shipping_address = new Address();
 		$shipping_address->addressee = $order->shipping_address['first_name'] . " " . $order->shipping_address['last_name'];
@@ -330,6 +334,8 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$shipping_address->state = $order->shipping_address['state'];
 		$shipping_address->zip = $order->shipping_address['postcode'];
 		$shipping_address->country = self::compareCountryCode($order->shipping_address['country']);
+		$shipping_address->addrPhone = $order->billing_address['phone'];
+		$shipping_address->attention = $order->shipping_address['first_name'] . " " . $order->shipping_address['last_name'];
 
 		$estimate->billingAddress = $billing_address;
 		$estimate->shippingAddress = $shipping_address;
