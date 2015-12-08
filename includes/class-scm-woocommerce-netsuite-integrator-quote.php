@@ -340,6 +340,10 @@ class SCM_WC_Netsuite_Integrator_Quote extends SCM_WC_Netsuite_Integrator_Servic
 		$estimate->billingAddress = $billing_address;
 		$estimate->shippingAddress = $shipping_address;
 
+		$estimate->location = new RecordRef();
+		// NetSuite InternalId for "Plano, TX";
+		$estimate->location->internalId = 1;
+
 		// $estimate->isTaxable = false;
 		// $estimate->discountRate = "0";
 		
